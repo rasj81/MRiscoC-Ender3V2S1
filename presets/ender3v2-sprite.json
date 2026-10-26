@@ -1,0 +1,6 @@
+{
+  "machine_name": "Ender3V2-Sprite",
+  "env": "STM32F103RE_creality",
+  "features": ["Ender3V2", "422", "DWIN", "BLT", "UBL", "T13", "LA", "IS", "MPC"],
+  "notes": "Direct drive, Creality Sprite Pro, CR Touch, T13 thermistor, 512 kB (RET6) board"
+}

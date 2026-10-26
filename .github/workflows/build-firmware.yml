@@ -1,0 +1,163 @@
+name: Build custom firmware
+
+# Run from the Actions tab: pick a saved preset, or choose "custom" and set the
+# options below (same choices as the Special_Configurations Configurator).
+# "ALL" builds every file in presets/. To add a preset, add presets/<name>.json
+# and add <name> to the preset list below.
+on:
+  workflow_dispatch:
+    inputs:
+      preset:
+        description: "Saved preset (custom = use the options below, ALL = every preset)"
+        type: choice
+        default: ender3v2-sprite
+        options: [custom, ALL, ender3v2-sprite, ender3v2-bowden]
+      machine_name:
+        description: "Custom only: machine name shown on the printer"
+        type: string
+        default: Custom
+      env:
+        description: "Custom only: PlatformIO environment (RET6 board = STM32F103RE_creality)"
+        type: string
+        default: STM32F103RE_creality
+      printer:
+        description: "Custom only: printer"
+        type: choice
+        default: Ender3V2
+        options: [Ender3V2, Ender3V2Neo, Ender3, Ender3S1, Ender3MaxNeo, Ender2Pro, Ender5Pro, Aquila]
+      board:
+        description: "Custom only: board"
+        type: choice
+        default: "422"
+        options: ["301F1", "301F4", "422", "423", "427", CR4NTF4, G32, SKRME3V2, SKRME3V3]
+      display:
+        description: "Custom only: display"
+        type: choice
+        default: DWIN
+        options: [DWIN, CR10DSPLY, DACAI, SYNWIT, TJC]
+      leveling:
+        description: "Custom only: bed leveling / probe"
+        type: choice
+        default: BLT
+        options: [BLT, AutoLev, BQMPv2, EZABLZI, EZABLZN, MM, UBL]
+      ubl:
+        description: "Custom only: add UBL on top of the probe"
+        type: boolean
+        default: true
+      thermistor:
+        description: "Custom only: thermistor (stock = firmware default, type 1)"
+        type: choice
+        default: stock
+        options: [stock, T1, T5, T13, T20]
+      la:
+        description: "Custom only: Linear Advance (LA)"
+        type: boolean
+        default: true
+      is:
+        description: "Custom only: Input Shaping (IS)"
+        type: boolean
+        default: true
+      mpc:
+        description: "Custom only: Model Predictive Control (MPC)"
+        type: boolean
+        default: true
+      np:
+        description: "Custom only: NP"
+        type: boolean
+        default: false
+      homeoffs:
+        description: "Custom only: HomeOffs"
+        type: boolean
+        default: false
+      locksteppers:
+        description: "Custom only: LockSteppers"
+        type: boolean
+        default: false
+      corexy:
+        description: "Custom only: CoreXY"
+        type: boolean
+        default: false
+      cvlm:
+        description: "Custom only: CVLM"
+        type: boolean
+        default: false
+      freeflash:
+        description: "Custom only: FreeFlash"
+        type: boolean
+        default: false
+      repeat_depth:
+        description: "Custom only: Repeat&Depth"
+        type: boolean
+        default: false
+      sdreadonly:
+        description: "Custom only: SDReadOnly"
+        type: boolean
+        default: false
+      speaker:
+        description: "Custom only: Speaker"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: plan
+        env:
+          INPUTS_JSON: ${{ toJSON(inputs) }}
+        run: python3 ci/plan.py
+
+  build:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    name: build ${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: mriscoc/Special_Configurations
+          path: gen
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-${{ runner.os }}-${{ matrix.env }}-${{ hashFiles('platformio.ini', 'ini/**') }}
+          restore-keys: pio-${{ runner.os }}-${{ matrix.env }}-
+      - run: pip install platformio
+      - name: Generate and check configuration
+        run: |
+          python3 ci/build.py --gen gen --name "${{ matrix.name }}" \
+            --features "$(echo '${{ toJSON(matrix.features) }}' | python3 -c 'import sys,json;print(",".join(json.load(sys.stdin)))')"
+      - name: Compile
+        run: platformio run -e "${{ matrix.env }}"
+      - name: Summary
+        run: |
+          {
+            echo "### ${{ matrix.name }}"
+            echo "- options: \`${{ join(matrix.features, ' ') }}\`"
+            echo "- environment: \`${{ matrix.env }}\`"
+            echo "- firmware commit: \`${{ github.sha }}\`"
+            echo "- generator commit: \`$(git -C gen rev-parse --short HEAD)\`"
+            ls -l .pio/build/${{ matrix.env }}/*.bin
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.name }}
+          path: |
+            .pio/build/${{ matrix.env }}/*.bin
+            Marlin/Configuration.h
+            Marlin/Configuration_adv.h
+            Marlin/Version.h
+          if-no-files-found: error
