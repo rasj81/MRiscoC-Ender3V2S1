@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       firmware_ref:
-        description: "Branch, tag or commit of the firmware source (blank = its default branch). Note: 'Use workflow from' above only picks which branch's workflow/presets run."
+        description: "Branch, tag or commit of the firmware source. Blank = latest bugfix (default branch); 'stable' = newest New-Year-#### branch. Note: 'Use workflow from' above only picks which branch's workflow/presets run."
         type: string
         default: ""
       firmware_source:
@@ -111,7 +111,38 @@ permissions:
   contents: read
 
 jobs:
+  sync:
+    # Keep this fork in step with mriscoc/Ender3V2S1 at the start of every build.
+    # Builds read the firmware straight from upstream, so a failed sync only
+    # matters (and then fails the run) when firmware_source is this-fork.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Sync fork branches with upstream
+        continue-on-error: ${{ inputs.firmware_source != 'this-fork' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF: ${{ inputs.firmware_ref }}
+        run: |
+          repo="${{ github.repository }}"
+          default="$(gh api "repos/$repo" --jq .default_branch)"
+          branches="$default"
+          case "$REF" in ""|stable|*[!A-Za-z0-9._/-]*) ;; *) [ "$REF" = "$default" ] || branches="$branches $REF";; esac
+          status=0
+          for b in $branches; do
+            if out="$(gh api -X POST "repos/$repo/merge-upstream" -f branch="$b" 2>&1)"; then
+              echo "- \`$b\`: $(echo "$out" | jq -r .message)" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "- \`$b\`: sync FAILED: $out" >> "$GITHUB_STEP_SUMMARY"
+              echo "::warning::sync of $b failed: $out"
+              [ "$b" = "$default" ] && status=1
+            fi
+          done
+          exit $status
+
   plan:
+    needs: sync
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
@@ -159,15 +190,18 @@ jobs:
         run: platformio run -e "${{ matrix.env }}"
       - name: Name the firmware like the Configurator, plus branch and date
         id: pkg
+        env:
+          FW_REF: ${{ matrix.firmware_ref }}
         run: |
           mkdir -p dist
           set -- fw/.pio/build/${{ matrix.env }}/*.bin
           [ "$#" -eq 1 ] || { echo "expected exactly one .bin, found $#: $*"; exit 1; }
           ref="$(git -C fw rev-parse --abbrev-ref HEAD)"
           # detached HEAD (tag or commit): use the requested ref, else the short SHA
-          if [ "$ref" = "HEAD" ]; then ref="${{ matrix.firmware_ref }}"; fi
+          if [ "$ref" = "HEAD" ]; then ref="$FW_REF"; fi
           [ -n "$ref" ] || ref="$(git -C fw rev-parse --short HEAD)"
           branch="$(printf '%s' "$ref" | tr -c 'A-Za-z0-9._-' '-')"
+          branch="${branch#Ender3V2S1-}"   # Ender3V2S1-Bugfix -> Bugfix
           base="${{ matrix.name }}-${branch}-${{ matrix.date }}"
           cp "$1" "dist/${base}.bin"
           sha256sum dist/*.bin | tee dist/SHA256SUMS.txt

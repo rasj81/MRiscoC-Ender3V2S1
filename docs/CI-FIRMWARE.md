@@ -15,3 +15,9 @@ Actions tab > "Build custom firmware" > Run workflow.
 
 ## Before flashing
 Save `M503` output first. After flashing run `M502` then `M500`, and re-enter probe offset and bed limits. Read the upstream changelog.
+
+## Branches
+- Blank `firmware_ref` builds the latest bugfix branch (default). `stable` builds the newest `New-Year-####` branch, for regression testing. Any other branch, tag or commit can be typed in.
+- The branch goes in the file name with the `Ender3V2S1-` prefix dropped (`Ender3V2S1-Bugfix` -> `Bugfix`).
+- Every run first syncs this fork with upstream (the `sync` job). Builds read upstream directly, so a failed sync only fails the run when `firmware_source` is `this-fork`.
+- The fork inherits upstream's own CI workflows; disable them in the Actions tab if they run on your pushes.

@@ -9,6 +9,8 @@ workflow): <name>-<branch>-<YYYYMMDD>.bin
 import datetime
 import json
 import os
+import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -81,6 +83,19 @@ def from_form(inputs, source):
     return build_item(codes, inputs["env"], "custom", source)
 
 
+def resolve_ref(repo, ref):
+    """'stable' = the newest New-Year-#### branch of the source repo."""
+    if ref.lower() != "stable":
+        return ref
+    out = subprocess.run(
+        ["git", "ls-remote", "--heads", f"https://github.com/{repo}.git", "New-Year-*"],
+        capture_output=True, text=True, check=True).stdout
+    years = [int(m.group(1)) for m in re.finditer(r"refs/heads/New-Year-(\d+)$", out, re.M)]
+    if not years:
+        sys.exit(f"no New-Year-#### branch found in {repo}")
+    return f"New-Year-{max(years)}"
+
+
 def main():
     raw = json.loads(os.environ.get("INPUTS_JSON") or "{}") or {}
     inputs = {k: (str(v).lower() if isinstance(v, bool) else str(v)) for k, v in raw.items()}
@@ -90,9 +105,10 @@ def main():
     use_fork = inputs.get("firmware_source") == "this-fork"
     source = {
         "source_repo": repo if use_fork else "mriscoc/Ender3V2S1",
-        "firmware_ref": inputs.get("firmware_ref", "").strip(),
+        "firmware_ref": "",
         "date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d"),
     }
+    source["firmware_ref"] = resolve_ref(source["source_repo"], inputs.get("firmware_ref", "").strip())
     if preset == "ALL":
         include = [from_preset(p.stem, source) for p in sorted(PRESET_DIR.glob("*.json"))]
     elif preset == "custom":
