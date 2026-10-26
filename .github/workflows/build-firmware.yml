@@ -11,6 +11,10 @@ on:
     - cron: "0 6 1 * *"
   workflow_dispatch:
     inputs:
+      firmware_ref:
+        description: "Branch, tag or commit of the firmware source (blank = its default branch). Note: 'Use workflow from' above only picks which branch's workflow/presets run."
+        type: string
+        default: ""
       firmware_source:
         description: "Firmware source: latest mriscoc upstream, or this fork's own copy"
         type: choice
@@ -21,10 +25,6 @@ on:
         type: choice
         default: ender3v2-sprite
         options: [custom, ALL, ender3v2-sprite, ender3v2-bowden]
-      machine_name:
-        description: "Custom only: machine name shown on the printer"
-        type: string
-        default: Custom
       env:
         description: "Custom only: PlatformIO environment (RET6 board = STM32F103RE_creality)"
         type: string
@@ -135,6 +135,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: ${{ matrix.source_repo }}
+          ref: ${{ matrix.firmware_ref }}
           path: fw
       - uses: actions/checkout@v4
         with:
@@ -156,21 +157,30 @@ jobs:
       - name: Compile
         working-directory: fw
         run: platformio run -e "${{ matrix.env }}"
+      - name: Name the firmware like the Configurator, plus date
+        run: |
+          mkdir -p dist
+          set -- fw/.pio/build/${{ matrix.env }}/*.bin
+          [ "$#" -eq 1 ] || { echo "expected exactly one .bin, found $#: $*"; exit 1; }
+          cp "$1" "dist/${{ matrix.name }}-${{ matrix.date }}.bin"
+          sha256sum dist/*.bin | tee dist/SHA256SUMS.txt
       - name: Summary
         run: |
           {
-            echo "### ${{ matrix.name }}"
+            echo "### ${{ matrix.name }}-${{ matrix.date }}.bin"
+            echo "- preset: \`${{ matrix.label }}\`"
+            echo "- firmware branch/ref: \`$(git -C fw rev-parse --abbrev-ref HEAD)\`"
             echo "- options: \`${{ join(matrix.features, ' ') }}\`"
             echo "- environment: \`${{ matrix.env }}\`"
             echo "- firmware source: \`${{ matrix.source_repo }}\` @ \`$(git -C fw rev-parse --short HEAD)\`"
             echo "- generator commit: \`$(git -C gen rev-parse --short HEAD)\`"
-            ls -l fw/.pio/build/${{ matrix.env }}/*.bin
+            ls -l dist/*.bin
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
-          name: firmware-${{ matrix.name }}
+          name: ${{ matrix.name }}-${{ matrix.date }}
           path: |
-            fw/.pio/build/${{ matrix.env }}/*.bin
+            dist/*
             fw/Marlin/Configuration.h
             fw/Marlin/Configuration_adv.h
             fw/Marlin/Version.h

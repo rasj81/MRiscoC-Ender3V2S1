@@ -1,6 +1,15 @@
 {
-  "machine_name": "Ender3V2-Bowden",
+  "label": "Ender3V2-Bowden",
   "env": "STM32F103RE_creality",
-  "features": ["Ender3V2", "422", "DWIN", "BLT", "UBL", "LA", "IS", "MPC"],
+  "features": [
+    "Ender3V2",
+    "422",
+    "DWIN",
+    "BLT",
+    "UBL",
+    "LA",
+    "IS",
+    "MPC"
+  ],
   "notes": "Bowden setup, stock thermistor (type 1), CR Touch, 512 kB (RET6) board"
 }
