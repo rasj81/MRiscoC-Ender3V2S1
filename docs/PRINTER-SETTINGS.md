@@ -59,78 +59,71 @@ Both motors share one driver through a splitter cable, so independent auto-align
 8. Calibrate in order: temperature, flow, pressure advance or Linear Advance K, retraction, then Input Shaping.
 9. Save `M503` output to a file.
 
-## Slicer settings by filament type
+## Slicer settings by filament type and nozzle size
 
-Orca Slicer / Bambu Studio terms. **Every value here is a starting point from general practice, not tested on this printer.** Replace each [measure] with your tuned result. Put these in the filament profile (Filament settings), not the printer profile, so each filament keeps its own. Retraction in the slicer is used; firmware retraction is off (see Heater tuning and the retraction notes above).
+Orca Slicer / Bambu Studio terms. **Every value is a starting point from general practice, not tested on this printer, and the spool label's range overrides mine.** Put filament values in the Filament profile and nozzle values in the Printer/Process profile. Slicer retraction is used; firmware retraction stays off.
 
-### Settings that are the same for every filament (printer / process profile)
+### Common to everything (printer / process profile)
 | Setting | Value | Why |
 |---|---|---|
-| Nozzle / line width | 0.4 mm nozzle, 0.42 line width | standard |
-| Layer height | 0.2 mm (0.28 draft) | |
-| Walls | 3, Arachne generator | thin features and text print instead of being skipped |
+| Walls | Arachne generator | thin features and small text print instead of being skipped |
 | Seam | scarf seam, contour | hides the seam on round parts |
 | Infill | Gyroid (strength), Adaptive Cubic (save filament), Lightning (display only); avoid Grid | see the printpal and Creality notes in the 3d-printing skill |
 | Acceleration | 500 (firmware default); raise only after Input Shaping is tuned | |
 | Travel speed | 150 mm/s | |
 | Bed mesh | UBL, fade height 10 | |
-| Printer end G-code | `M84 X Y E` | keeps the Z motors locked so the gantry does not drop (dual Z) |
+| Printer end G-code | `M84 X Y E` | keeps Z motors locked so the gantry does not drop (dual Z) |
 | Printer start G-code | `G28`, then `M420 S1` to activate the saved UBL mesh, then heat and purge | [measure] confirm the mesh stays active after `G28` |
-| Retraction (direct drive) | see per-filament table | the Bowden 5 mm retraction must not be used |
 
-### PLA
-| Setting | Starting value | Tuned |
-|---|---|---|
-| Nozzle temperature | 205 to 215 C (start 210) | [measure, temperature tower] |
-| First layer nozzle | +5 C | |
-| Bed | 55 to 60 C | |
-| Part cooling fan | 100 % from layer 3 | |
-| Outer wall / inner wall / infill speed | 60 / 80 / 100 mm/s | [measure] |
-| First layer speed | 20 to 25 mm/s | |
-| Max volumetric speed | 10 to 12 mm3/s | [measure] |
-| Flow ratio | 0.98 | [measure] |
-| Retraction | 0.8 mm at 35 mm/s, Z hop off | [measure, retraction tower] |
-| Linear Advance K | | [measure] |
+### Filament profiles (0.4 mm nozzle values)
+| | PLA | PLA+ | PLA Pro | PETG+ | ABS | ASA |
+|---|---|---|---|---|---|---|
+| Nozzle C | 205-215 (210) | 210-225 (215) | 210-230 (220) | 235-250 (240) | 240-260 (250) | 245-265 (255) |
+| First layer nozzle | +5 | +5 | +5 | +5 | +0 | +0 |
+| Bed C | 55-60 | 55-65 | 55-65 | 75-80 | 95-100 | 90-100 |
+| Part fan | 100 % from layer 3 | 70-100 % | 70-100 % | 20-40 % | 0-20 % | 0-30 % |
+| Outer / inner / infill speed (mm/s) | 60/80/100 | 50/70/90 | 50/70/90 | 40/55/65 | 40/60/70 | 40/60/70 |
+| First layer speed (mm/s) | 20-25 | 20-25 | 20-25 | 20 | 20 | 20 |
+| Max volumetric speed (mm3/s) | 10-12 | 9-11 | 9-11 | 8-10 | 10-12 | 10-12 |
+| Flow ratio | 0.98 | 0.98 | 0.98 | 0.95-0.98 | 0.95-0.98 | 0.95-0.98 |
+| Retraction (direct drive) | 0.8 mm at 35 mm/s | 0.8 mm at 35 | 0.8 mm at 35 | 0.8-1.2 mm at 30 | 0.8 mm at 30 | 0.8 mm at 30 |
+| Z hop | off | off | off | 0.2 mm if it drags | off | off |
+| Enclosure | no | no | no | no | **yes** | **yes** |
 
-### PETG
-| Setting | Starting value | Tuned |
-|---|---|---|
-| Nozzle temperature | 230 to 245 C (start 235) | [measure] |
-| Bed | 70 to 80 C | |
-| Part cooling fan | 30 to 50 % | |
-| Outer wall / inner wall / infill speed | 45 / 60 / 70 mm/s | [measure] |
-| First layer speed | 20 mm/s | |
-| Max volumetric speed | 8 to 10 mm3/s | [measure] |
-| Flow ratio | 0.95 to 0.98 | [measure] |
-| Retraction | 0.8 to 1.2 mm at 30 mm/s, Z hop 0.2 mm optional | [measure] |
-| Notes | prone to stringing and sticking to the nozzle; use a lower fan and a clean nozzle | |
-| Linear Advance K | | [measure] |
+- PLA+, PLA Pro and PETG+ are brand blends: they vary a lot between makers, so start from the label and tune.
+- PETG+ strings and sticks to the nozzle; keep the fan low and the nozzle clean.
+- ABS and ASA warp and crack on an open frame. Print them only in an enclosure. I haven't confirmed the Sprite Pro hotend's temperature rating; check its manual before going above about 260 C.
 
-### TPU (95A)
-| Setting | Starting value | Tuned |
-|---|---|---|
-| Nozzle temperature | 220 to 235 C | [measure] |
-| Bed | 40 to 60 C | |
-| Part cooling fan | 50 to 100 % | |
-| All speeds | 20 to 30 mm/s | [measure] |
-| Max volumetric speed | 3 to 4 mm3/s | [measure] |
-| Retraction | 0 to 0.5 mm, or off | [measure] |
-| Notes | feed the filament slowly and keep the filament path short; lower or disable Linear Advance for TPU | |
-| Linear Advance K | | [measure] |
+### Nozzle profiles (layer height and line width)
+| Nozzle | Layer height (range) | Line width | Walls | Notes |
+|---|---|---|---|---|
+| 0.2 | 0.10 (0.08-0.12) | 0.22 | 4-5 | slow, +5 C, clogs easily; avoid abrasive filaments |
+| 0.4 | 0.20 (0.12-0.28) | 0.42 | 3 | baseline |
+| 0.6 | 0.30 (0.20-0.40) | 0.62 | 2-3 | good speed/detail compromise |
+| 0.8 | 0.40 (0.30-0.60) | 0.82 | 2 | likely needs +5 to +10 C for flow |
+| 1.0 | 0.50 (0.40-0.75) | 1.00 | 2 | flow limited by the heater; expect slow outer walls |
 
-### ABS / ASA
-| Setting | Starting value | Tuned |
-|---|---|---|
-| Nozzle temperature | 240 to 260 C | [measure] |
-| Bed | 90 to 100 C | |
-| Part cooling fan | 0 to 20 % | |
-| Outer wall / inner wall / infill speed | 40 / 60 / 70 mm/s | [measure] |
-| Retraction | 0.8 mm at 30 mm/s | [measure] |
-| Notes | open-frame printers warp and crack ABS; an enclosure is strongly recommended. The Sprite Pro hotend rating is above these temperatures, but confirm in its manual. | |
-| Linear Advance K | | [measure] |
+Large nozzles do not remove the melt-rate limit. The cap is the **max volumetric speed** of the hotend and filament. Set it per filament (table above) and let the slicer slow the print down. Speed at the cap = volumetric speed / (layer height x line width):
+
+| Nozzle | Layer | Width | PLA | PLA+ | PLA Pro | PETG+ | ABS | ASA |
+|---|---|---|---|---|---|---|---|---|
+| 0.2 | 0.10 | 0.22 | 455 | 409 | 409 | 364 | 455 | 455 |
+| 0.4 | 0.20 | 0.42 | 119 | 107 | 107 | 95 | 119 | 119 |
+| 0.6 | 0.30 | 0.62 | 54 | 48 | 48 | 43 | 54 | 54 |
+| 0.8 | 0.40 | 0.82 | 30 | 27 | 27 | 24 | 30 | 30 |
+| 1.0 | 0.50 | 1.00 | 20 | 18 | 18 | 16 | 20 | 20 |
+
+(mm/s at the default layer and width, using the low volumetric value from the filament table. The slicer's own feature speeds apply first.) A 0.8 or 1.0 nozzle is slow unless the hotend can sustain a higher flow; raise the cap only after a flow test shows no under-extrusion or grinding.
+
+Per nozzle change: re-check flow ratio and Linear Advance K, set retraction a little higher for 0.8 and 1.0 (try 1.0 to 1.5 mm), re-run MPC autotune because the heater block and nozzle change, and redo the Z offset if the nozzle length changed. Whether the Sprite Pro takes all of these sizes is not something I have confirmed.
+
+### Tuned results log (fill in)
+| Filament | Nozzle | Temp | Flow | LA K | Retraction | Max vol. | Date |
+|---|---|---|---|---|---|---|---|
+| | | [measure] | [measure] | [measure] | [measure] | [measure] | |
 
 ### Calibration order per new filament (from the 3d-printing skill)
-Temperature tower, flow rate, Linear Advance K, retraction, then (once only) Input Shaping. Save each result in the Tuned column.
+Temperature tower, flow rate, Linear Advance K, retraction, then (once only) Input Shaping. Record each result in the log above.
 
 ## Open items
 Probe offsets, bed limits, E steps, Z offset, MPC and PID results, Linear Advance K, Input Shaping frequencies, smart filament sensor option (not in the generator feature list).
