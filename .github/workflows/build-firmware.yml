@@ -4,9 +4,18 @@ name: Build custom firmware
 # options below (same choices as the Special_Configurations Configurator).
 # "ALL" builds every file in presets/. To add a preset, add presets/<name>.json
 # and add <name> to the preset list below.
+#
+# Also runs on the 1st of every month (all presets, latest upstream firmware).
 on:
+  schedule:
+    - cron: "0 6 1 * *"
   workflow_dispatch:
     inputs:
+      firmware_source:
+        description: "Firmware source: latest mriscoc upstream, or this fork's own copy"
+        type: choice
+        default: upstream-latest
+        options: [upstream-latest, this-fork]
       preset:
         description: "Saved preset (custom = use the options below, ALL = every preset)"
         type: choice
@@ -125,6 +134,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
+          repository: ${{ matrix.source_repo }}
+          path: fw
+      - uses: actions/checkout@v4
+        with:
           repository: mriscoc/Special_Configurations
           path: gen
       - uses: actions/setup-python@v5
@@ -133,14 +146,15 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.platformio
-          key: pio-${{ runner.os }}-${{ matrix.env }}-${{ hashFiles('platformio.ini', 'ini/**') }}
+          key: pio-${{ runner.os }}-${{ matrix.env }}-${{ hashFiles('fw/platformio.ini', 'fw/ini/**') }}
           restore-keys: pio-${{ runner.os }}-${{ matrix.env }}-
       - run: pip install platformio
       - name: Generate and check configuration
         run: |
-          python3 ci/build.py --gen gen --name "${{ matrix.name }}" \
+          python3 ci/build.py --gen gen --target fw --name "${{ matrix.name }}" \
             --features "$(echo '${{ toJSON(matrix.features) }}' | python3 -c 'import sys,json;print(",".join(json.load(sys.stdin)))')"
       - name: Compile
+        working-directory: fw
         run: platformio run -e "${{ matrix.env }}"
       - name: Summary
         run: |
@@ -148,16 +162,16 @@ jobs:
             echo "### ${{ matrix.name }}"
             echo "- options: \`${{ join(matrix.features, ' ') }}\`"
             echo "- environment: \`${{ matrix.env }}\`"
-            echo "- firmware commit: \`${{ github.sha }}\`"
+            echo "- firmware source: \`${{ matrix.source_repo }}\` @ \`$(git -C fw rev-parse --short HEAD)\`"
             echo "- generator commit: \`$(git -C gen rev-parse --short HEAD)\`"
-            ls -l .pio/build/${{ matrix.env }}/*.bin
+            ls -l fw/.pio/build/${{ matrix.env }}/*.bin
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
           name: firmware-${{ matrix.name }}
           path: |
-            .pio/build/${{ matrix.env }}/*.bin
-            Marlin/Configuration.h
-            Marlin/Configuration_adv.h
-            Marlin/Version.h
+            fw/.pio/build/${{ matrix.env }}/*.bin
+            fw/Marlin/Configuration.h
+            fw/Marlin/Configuration_adv.h
+            fw/Marlin/Version.h
           if-no-files-found: error

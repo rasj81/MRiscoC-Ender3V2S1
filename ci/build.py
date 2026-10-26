@@ -32,12 +32,14 @@ def active_define(text, name, value=None):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--gen", required=True, help="path to Special_Configurations checkout")
+    ap.add_argument("--target", default=".", help="firmware checkout to install the configs into")
     ap.add_argument("--name", required=True)
     ap.add_argument("--features", required=True, help="comma-separated option codes")
     args = ap.parse_args()
 
     features = [f for f in args.features.split(",") if f]
     gen = Path(args.gen).resolve()
+    target = Path(args.target).resolve()
     sys.path.insert(0, str(gen))
     import os
     os.chdir(gen)
@@ -58,7 +60,7 @@ def main():
     if missing:
         sys.exit("sanity check failed:\n  " + "\n  ".join(missing))
 
-    repo = Path(os.environ["GITHUB_WORKSPACE"]) if "GITHUB_WORKSPACE" in os.environ else Path.cwd()
+    repo = target
     for fname in ("Configuration.h", "Configuration_adv.h", "Version.h"):
         shutil.copy(out / fname, repo / "Marlin" / fname)
     shutil.copy(out / "platformio.ini", repo / "platformio.ini")

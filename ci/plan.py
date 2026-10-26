@@ -32,15 +32,20 @@ def custom(inputs):
 
 
 def main():
-    inputs = {k: (str(v).lower() if isinstance(v, bool) else str(v))
-              for k, v in json.loads(os.environ["INPUTS_JSON"]).items()}
-    preset = inputs.get("preset", "custom")
+    raw = json.loads(os.environ.get("INPUTS_JSON") or "{}") or {}
+    inputs = {k: (str(v).lower() if isinstance(v, bool) else str(v)) for k, v in raw.items()}
+    # Scheduled runs have no inputs: build every preset from upstream.
+    preset = inputs.get("preset", "ALL")
     if preset == "ALL":
         include = [load_preset(p.stem) for p in sorted(PRESET_DIR.glob("*.json"))]
     elif preset == "custom":
         include = [custom(inputs)]
     else:
         include = [load_preset(preset)]
+    source = "this-fork" if inputs.get("firmware_source") == "this-fork" else "upstream-latest"
+    repo = os.environ.get("GITHUB_REPOSITORY", "rasj81/MRiscoC-Ender3V2S1")
+    for item in include:
+        item["source_repo"] = repo if source == "this-fork" else "mriscoc/Ender3V2S1"
     matrix = json.dumps({"include": include})
     print(matrix)
     out = os.environ.get("GITHUB_OUTPUT")
