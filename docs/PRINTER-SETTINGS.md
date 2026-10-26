@@ -126,16 +126,16 @@ Per nozzle change: re-check flow ratio and Linear Advance K, set retraction a li
 Temperature tower, flow rate, Linear Advance K, retraction, then (once only) Input Shaping. Record each result in the log above.
 
 ## Status (2026-10-26)
-Flashed and running. Done: MPC autotune. In use but unverified (borrowed or starting values): E steps 424.9, probe offsets X -31.4 / Y -40.1, Z offset -2.76 (bed specific), bed limits from the reference post.
+Flashed and running. Done: MPC autotune, bed PID autotune, `M503` output saved. In use but unverified (borrowed or starting values): E steps 424.9, probe offsets X -31.4 / Y -40.1, Z offset -2.76 (bed specific), bed limits from the reference post.
 
 ## Open items
 1. Z offset: redo the paper test, starting from 0 and lowering in steps (see the Z height notes in the chat history: `M851`, `M500`, `G28`, re-check).
 2. Verify E steps by measuring (120 mm mark, extrude 100 mm).
 3. Measure probe offsets; check bed limits slowly at each edge.
-4. Bed PID autotune (hotend uses MPC), then `M500`.
+4. ~~Bed PID autotune~~ done.
 5. Build and save the UBL mesh (bed warm), slot 0, activate.
 6. Retraction in the slicer (start 0.8 mm at 35 mm/s, direct drive); firmware retraction stays off.
 7. Linear Advance K, then Input Shaping.
 8. Smart filament sensor: needs the firmware option (not in the generator feature list).
-9. Save `M503` output to a file once tuned.
+9. `M503` saved once; save a new copy after the remaining tuning.
 10. CI follow-ups: GitHub Releases for builds, `BUILDS.md`, cleanup action, clean/experimental tiers.
