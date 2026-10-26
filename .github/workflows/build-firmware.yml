@@ -187,7 +187,17 @@ jobs:
             --features "$(echo '${{ toJSON(matrix.features) }}' | python3 -c 'import sys,json;print(",".join(json.load(sys.stdin)))')"
       - name: Compile
         working-directory: fw
-        run: platformio run -e "${{ matrix.env }}"
+        run: |
+          set +e
+          platformio run -e "${{ matrix.env }}" 2>&1 | tee ../build.log
+          rc=${PIPESTATUS[0]}
+          if [ "$rc" -ne 0 ]; then
+            # Surface the cause as annotations (visible without downloading logs).
+            grep -n -i -E "error|\*\*\*|fatal|undefined reference|region .* overflowed|No such file" ../build.log \
+              | grep -v -i "werror" | head -8 | cut -c1-230 | while IFS= read -r line; do echo "::error::${line}"; done
+            echo "::notice::last log lines: $(tail -n 6 ../build.log | tr '\n' '|' | cut -c1-400)"
+          fi
+          exit $rc
       - name: Name the firmware like the Configurator, plus branch and date
         id: pkg
         env:
@@ -219,6 +229,12 @@ jobs:
             echo "- generator commit: \`$(git -C gen rev-parse --short HEAD)\`"
             ls -l dist/*.bin
           } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: build-log-${{ matrix.name }}
+          path: build.log
+          if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.pkg.outputs.base }}
