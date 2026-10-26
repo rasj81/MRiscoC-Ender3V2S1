@@ -217,6 +217,8 @@ jobs:
           sha256sum dist/*.bin | tee dist/SHA256SUMS.txt
           echo "base=${base}" >> "$GITHUB_OUTPUT"
           echo "branch=${branch}" >> "$GITHUB_OUTPUT"
+      - name: Add matching display assets
+        run: python3 ci/display.py --fw fw --display "${{ matrix.display }}" --out dist/display
       - name: Summary
         run: |
           {
@@ -239,7 +241,7 @@ jobs:
         with:
           name: ${{ steps.pkg.outputs.base }}
           path: |
-            dist/*
+            dist/**
             fw/Marlin/Configuration.h
             fw/Marlin/Configuration_adv.h
             fw/Marlin/Version.h

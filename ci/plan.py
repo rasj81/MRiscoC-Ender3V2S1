@@ -74,7 +74,8 @@ def machine_name(name):
 def build_item(codes, env, label, source):
     modes = canonical(codes)
     name = auto_name(modes)
-    return {"name": name, "machine_name": machine_name(name), "label": label, "env": env, "features": modes, **source}
+    display = next(iter(set(codes) & DISPLAYS), "DWIN")
+    return {"display": display, "name": name, "machine_name": machine_name(name), "label": label, "env": env, "features": modes, **source}
 
 
 def from_preset(name, source):
