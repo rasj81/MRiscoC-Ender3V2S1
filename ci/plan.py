@@ -63,9 +63,18 @@ def auto_name(modes):
     return name
 
 
+def machine_name(name):
+    """Name shown on the printer. Marlin's ProUI requires 32 characters or less
+    (static_assert on MACHINE_NAME), so shorten only when needed."""
+    if len(name) > 32:
+        name = name.replace("Ender", "E")
+    return name[:32]
+
+
 def build_item(codes, env, label, source):
     modes = canonical(codes)
-    return {"name": auto_name(modes), "label": label, "env": env, "features": modes, **source}
+    name = auto_name(modes)
+    return {"name": name, "machine_name": machine_name(name), "label": label, "env": env, "features": modes, **source}
 
 
 def from_preset(name, source):

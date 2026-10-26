@@ -183,7 +183,7 @@ jobs:
       - run: pip install platformio
       - name: Generate and check configuration
         run: |
-          python3 ci/build.py --gen gen --target fw --name "${{ matrix.name }}" \
+          python3 ci/build.py --gen gen --target fw --name "${{ matrix.name }}" --machine-name "${{ matrix.machine_name }}" \
             --features "$(echo '${{ toJSON(matrix.features) }}' | python3 -c 'import sys,json;print(",".join(json.load(sys.stdin)))')"
       - name: Compile
         working-directory: fw

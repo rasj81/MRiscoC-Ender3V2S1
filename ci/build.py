@@ -33,11 +33,15 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--gen", required=True, help="path to Special_Configurations checkout")
     ap.add_argument("--target", default=".", help="firmware checkout to install the configs into")
-    ap.add_argument("--name", required=True)
+    ap.add_argument("--name", required=True, help="Configurator-style name (used for the .bin)")
+    ap.add_argument("--machine-name", default=None, help="name inside the firmware, 32 chars max")
     ap.add_argument("--features", required=True, help="comma-separated option codes")
     args = ap.parse_args()
 
     features = [f for f in args.features.split(",") if f]
+    mname = args.machine_name or args.name
+    if len(mname) > 32:
+        sys.exit(f"machine name {mname!r} is {len(mname)} chars; Marlin allows 32 at most")
     gen = Path(args.gen).resolve()
     target = Path(args.target).resolve()
     sys.path.insert(0, str(gen))
@@ -45,11 +49,11 @@ def main():
     os.chdir(gen)
     import CreateConfigs
 
-    if CreateConfigs.Generate(args.name, features):
-        print((gen / args.name / "log.txt").read_text())
+    if CreateConfigs.Generate(mname, features):
+        print((gen / mname / "log.txt").read_text())
         sys.exit("generator reported an error")
 
-    out = gen / args.name
+    out = gen / mname
     cfg = (out / "Configuration.h").read_text() + (out / "Configuration_adv.h").read_text()
     missing = []
     for code in features:
@@ -65,7 +69,7 @@ def main():
         shutil.copy(out / fname, repo / "Marlin" / fname)
     shutil.copy(out / "platformio.ini", repo / "platformio.ini")
     m = re.search(r"(?m)^[ \t]*#define[ \t]+TEMP_SENSOR_0[ \t]+(\S+)", cfg)
-    print(f"OK {args.name}: options={features} TEMP_SENSOR_0={m.group(1) if m else '?'}")
+    print(f"OK {mname} (file name {args.name}): options={features} TEMP_SENSOR_0={m.group(1) if m else '?'}")
 
 
 if __name__ == "__main__":
