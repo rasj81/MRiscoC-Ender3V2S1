@@ -3,7 +3,8 @@
 
 Firmware names follow the Special_Configurations Configurator "Auto" rule:
 printer-board-leveling[-UBL joined]-[display if not DWIN]-[thermistor if not T1]-features,
-and each .bin gets a UTC date stamp: <name>-<YYYYMMDD>.bin
+and each .bin gets the firmware branch and a UTC date stamp (added by the
+workflow): <name>-<branch>-<YYYYMMDD>.bin
 """
 import datetime
 import json

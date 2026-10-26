@@ -157,17 +157,26 @@ jobs:
       - name: Compile
         working-directory: fw
         run: platformio run -e "${{ matrix.env }}"
-      - name: Name the firmware like the Configurator, plus date
+      - name: Name the firmware like the Configurator, plus branch and date
+        id: pkg
         run: |
           mkdir -p dist
           set -- fw/.pio/build/${{ matrix.env }}/*.bin
           [ "$#" -eq 1 ] || { echo "expected exactly one .bin, found $#: $*"; exit 1; }
-          cp "$1" "dist/${{ matrix.name }}-${{ matrix.date }}.bin"
+          ref="$(git -C fw rev-parse --abbrev-ref HEAD)"
+          # detached HEAD (tag or commit): use the requested ref, else the short SHA
+          if [ "$ref" = "HEAD" ]; then ref="${{ matrix.firmware_ref }}"; fi
+          [ -n "$ref" ] || ref="$(git -C fw rev-parse --short HEAD)"
+          branch="$(printf '%s' "$ref" | tr -c 'A-Za-z0-9._-' '-')"
+          base="${{ matrix.name }}-${branch}-${{ matrix.date }}"
+          cp "$1" "dist/${base}.bin"
           sha256sum dist/*.bin | tee dist/SHA256SUMS.txt
+          echo "base=${base}" >> "$GITHUB_OUTPUT"
+          echo "branch=${branch}" >> "$GITHUB_OUTPUT"
       - name: Summary
         run: |
           {
-            echo "### ${{ matrix.name }}-${{ matrix.date }}.bin"
+            echo "### ${{ steps.pkg.outputs.base }}.bin"
             echo "- preset: \`${{ matrix.label }}\`"
             echo "- firmware branch/ref: \`$(git -C fw rev-parse --abbrev-ref HEAD)\`"
             echo "- options: \`${{ join(matrix.features, ' ') }}\`"
@@ -178,7 +187,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.name }}-${{ matrix.date }}
+          name: ${{ steps.pkg.outputs.base }}
           path: |
             dist/*
             fw/Marlin/Configuration.h
