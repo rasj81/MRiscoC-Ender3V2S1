@@ -60,6 +60,12 @@ Both motors share one driver through a splitter cable, so independent auto-align
 8. Calibrate in order: temperature, flow, pressure advance or Linear Advance K, retraction, then Input Shaping.
 9. Save `M503` output to a file.
 
+## Pre-print mesh tilt (decided 2026-10-27)
+The 6x6 mesh stays saved in slot 0 and is not rebuilt per print. Each print reloads it and tilts it to the bed's current level:
+`G28`, then `G29 L0` (reload slot 0; without this the tilt would compound from print to print), `G29 J` (3-point tilt), `M420 S1 Z10`.
+Rebuild the full mesh warm (and `G29 S0` to save) after major changes: nozzle, probe mount, springs, bed surface, or if the first layer drifts. Start and end G-code files: `gcode/start.gcode` and `gcode/end.gcode` (drafts, untested; end G-code keeps Z locked with `M84 X Y E`).
+Not verified on this firmware: that `G29 J` runs and reaches its points inside the mesh bounds; that the saved mesh loads after any change to the point count.
+
 ## Slicer settings by filament type and nozzle size
 
 Orca Slicer / Bambu Studio terms. **Every value is a starting point from general practice, not tested on this printer, and the spool label's range overrides mine.** Put filament values in the Filament profile and nozzle values in the Printer/Process profile. Slicer retraction is used; firmware retraction stays off.
@@ -74,7 +80,7 @@ Orca Slicer / Bambu Studio terms. **Every value is a starting point from general
 | Travel speed | 150 mm/s | |
 | Bed mesh | UBL, fade height 10 | |
 | Printer end G-code | `M84 X Y E` | keeps Z motors locked so the gantry does not drop (dual Z) |
-| Printer start G-code | `G28`, then `M420 S1` to activate the saved UBL mesh, then heat and purge | [measure] confirm the mesh stays active after `G28` |
+| Printer start G-code | `gcode/start.gcode` in this repo (draft, untested): heat bed, `G28`, `G29 L0`, `G29 J`, `M420 S1 Z10`, heat nozzle, purge line | [measure] confirm the 3-point tilt reaches its points inside the mesh bounds and that the mesh stays active after `G28` |
 
 ### Filament profiles (0.4 mm nozzle values)
 | | PLA | PLA+ | PLA Pro | PETG+ | ABS | ASA |
