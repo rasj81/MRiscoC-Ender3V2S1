@@ -35,7 +35,7 @@ E-steps (measured): [measure]
 - Other user, same hardware and firmware family [ref]: X -31.4, Y -40.1, Z -2.76 (Z is bed and nozzle specific). Mesh inset in the same post equals max position plus offset (X 183.6 = 215 - 31.4, Y 179.9 = 220 - 40.1).
 - Left and front are negative. Measure from nozzle tip to the probe pin centre.
 - Mine (measured 2026-10-27): X -31.2, Y -42.1 (centred with a small washer between nozzle and probe pin), Z -2.82 after removing spacers (earlier -3.21 with a 0.1 mm feeler gauge, now superseded). Confirm Z on the first-layer print and re-check if probe speed or mount changes.
-- Mesh bounds from these offsets and the borrowed bed limits (X max 215, Y max 220): X 10 to 183.8, Y 10 to 177.9. Recompute if the bed limits change. Rebuild the UBL mesh after any probe change.
+- UBL mesh (2026-10-27): 6x6 points, Maximize area. Bounds read from the printer: X 10 to 183, Y 10 to 177 (matches the calculation from the probe offsets and bed limits). Point spacing about 34.6 mm in X and 33.4 mm in Y. Build warm, save to slot 0, activate, fade height 10. Rebuild after any probe or limit change. Go to 7x7 only if the mesh map shows a ridge or dip.
 - Multi probing 2 and HS mode were enabled in the reference post [ref].
 
 ## Bed and limits (set on the printer screen, then `M500`)
