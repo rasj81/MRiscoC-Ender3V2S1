@@ -34,7 +34,8 @@ E-steps (measured): [measure]
 - Firmware default `NOZZLE_TO_PROBE_OFFSET { -41.5, -7, 0 }` [config]: for a different bracket, do not use.
 - Other user, same hardware and firmware family [ref]: X -31.4, Y -40.1, Z -2.76 (Z is bed and nozzle specific). Mesh inset in the same post equals max position plus offset (X 183.6 = 215 - 31.4, Y 179.9 = 220 - 40.1).
 - Left and front are negative. Measure from nozzle tip to the probe pin centre.
-- Mine: X [measure], Y [measure], Z [measure, paper test, re-check if probe speed changes]
+- Mine (measured 2026-10-27): X -31.2, Y -42.1 (centred with a small washer between nozzle and probe pin), Z -2.82 after removing spacers (earlier -3.21 with a 0.1 mm feeler gauge, now superseded). Confirm Z on the first-layer print and re-check if probe speed or mount changes.
+- Mesh bounds from these offsets and the borrowed bed limits (X max 215, Y max 220): X 10 to 183.8, Y 10 to 177.9. Recompute if the bed limits change. Rebuild the UBL mesh after any probe change.
 - Multi probing 2 and HS mode were enabled in the reference post [ref].
 
 ## Bed and limits (set on the printer screen, then `M500`)
@@ -125,13 +126,13 @@ Per nozzle change: re-check flow ratio and Linear Advance K, set retraction a li
 ### Calibration order per new filament (from the 3d-printing skill)
 Temperature tower, flow rate, Linear Advance K, retraction, then (once only) Input Shaping. Record each result in the log above.
 
-## Status (2026-10-26)
-Flashed and running. Done: MPC autotune, bed PID autotune, `M503` output saved. In use but unverified (borrowed or starting values): E steps 424.9, probe offsets X -31.4 / Y -40.1, Z offset -2.76 (bed specific), bed limits from the reference post.
+## Status (2026-10-27)
+Flashed and running. Done: MPC autotune, bed PID autotune, `M503` output saved. Measured: probe X -31.2, Y -42.1, Z offset -2.82. Still borrowed or unverified: E steps 424.9, bed limits from the reference post; Z offset still needs the first-layer confirmation.
 
 ## Open items
-1. Z offset: redo the paper test, starting from 0 and lowering in steps (see the Z height notes in the chat history: `M851`, `M500`, `G28`, re-check).
+1. Z offset: -2.82 measured; confirm on the first-layer print (live adjust 0.02 to 0.05 mm), then `M500`.
 2. Verify E steps by measuring (120 mm mark, extrude 100 mm).
-3. Measure probe offsets; check bed limits slowly at each edge.
+3. Probe offsets measured; check bed limits slowly at each edge and update the mesh bounds if they change.
 4. ~~Bed PID autotune~~ done.
 5. Build and save the UBL mesh (bed warm), slot 0, activate.
 6. Retraction in the slicer (start 0.8 mm at 35 mm/s, direct drive); firmware retraction stays off.
