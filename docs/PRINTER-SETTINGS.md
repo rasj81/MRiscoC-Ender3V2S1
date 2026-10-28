@@ -40,7 +40,8 @@ E-steps (measured): [measure]
 
 ## Bed and limits (set on the printer screen, then `M500`)
 Reference [ref]: X min 0, Y min -5, X max 215, Y max 220, Z max 235; mesh 7x7, fade height 10, inset 10.
-Mine: X min [measure], Y min [measure], X max [measure], Y max [measure], Z max [measure]
+Mine (measured 2026-10-27/28 in the current configuration): X 0 to 220, Y 0 to 220, Z max 230. The firmware's compiled Z_MAX_POS is 250, so set Z max to 230 on the printer screen and `M500` so the firmware never drives above the real limit. Mesh: 6x6, maximize area (see below), fade height 10.
+Orca printer profile: bed shape 220 x 220 mm, origin 0,0 (front-left), max print height 230 mm, bed exclude area `0x0,120x0,120x20,0x20` (purge strip of `gcode/start.gcode`; if Orca rejects the point format, draw the rectangle in its editor). Usable area: 220 x 220 minus the 120 x 20 strip.
 
 ## Heater tuning
 - Hotend uses MPC: run the autotune from the menu or `M306 T`, then `M500`. Reference PID values in the source post are not needed.
@@ -132,7 +133,7 @@ Per nozzle change: re-check flow ratio and Linear Advance K, set retraction a li
 ### Calibration order per new filament (from the 3d-printing skill)
 Temperature tower, flow rate, Linear Advance K, retraction, then (once only) Input Shaping. Record each result in the log above.
 
-## Status (2026-10-27)
+## Status (2026-10-28)
 Flashed and running. Done: MPC autotune, bed PID autotune, `M503` output saved. Measured: probe X -31.2, Y -42.1, Z offset -2.82. Still borrowed or unverified: E steps 424.9, bed limits from the reference post; Z offset still needs the first-layer confirmation.
 
 ## Open items
