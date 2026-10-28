@@ -53,6 +53,19 @@ def patch_park_point(text, adv_text):
     return text[:m.start()] + new + text[m.end():], point
 
 
+PAUSE_RETRACT_MM = "1.5"  # owner rule: no retract above 2 mm on this direct drive; pause/M600 retract stays under it
+
+
+def patch_pause_retract(adv_text):
+    """Set the initial retract of pause and filament change (generator default 2 mm) to PAUSE_RETRACT_MM."""
+    pat = re.compile(r"(?m)^([ \t]*#define[ \t]+PAUSE_PARK_RETRACT_LENGTH[ \t]+)[\d.]+")
+    if not pat.search(adv_text):
+        if active_define(adv_text, "ADVANCED_PAUSE_FEATURE"):
+            sys.exit("pause retract: ADVANCED_PAUSE_FEATURE is active but PAUSE_PARK_RETRACT_LENGTH was not found")
+        return adv_text, None
+    return pat.sub(lambda m: m.group(1) + PAUSE_RETRACT_MM, adv_text, count=1), PAUSE_RETRACT_MM
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--gen", required=True, help="path to Special_Configurations checkout")
@@ -81,7 +94,9 @@ def main():
     conf_h = (out / "Configuration.h").read_text()
     conf_adv = (out / "Configuration_adv.h").read_text()
     conf_h, park = patch_park_point(conf_h, conf_adv)
+    conf_adv, pause_retract = patch_pause_retract(conf_adv)
     (out / "Configuration.h").write_text(conf_h)
+    (out / "Configuration_adv.h").write_text(conf_adv)
     cfg = conf_h + conf_adv
     missing = []
     for code in features:
@@ -97,7 +112,7 @@ def main():
         shutil.copy(out / fname, repo / "Marlin" / fname)
     shutil.copy(out / "platformio.ini", repo / "platformio.ini")
     m = re.search(r"(?m)^[ \t]*#define[ \t]+TEMP_SENSOR_0[ \t]+(\S+)", cfg)
-    print(f"OK {mname} (file name {args.name}): options={features} TEMP_SENSOR_0={m.group(1) if m else '?'} NOZZLE_PARK_POINT={park or 'unchanged'}")
+    print(f"OK {mname} (file name {args.name}): options={features} TEMP_SENSOR_0={m.group(1) if m else '?'} NOZZLE_PARK_POINT={park or 'unchanged'} PAUSE_PARK_RETRACT_LENGTH={pause_retract or 'unchanged'}")
 
 
 if __name__ == "__main__":
