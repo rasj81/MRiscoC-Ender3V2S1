@@ -11,6 +11,8 @@ G90                                  ; absolute positioning
 M83                                  ; relative extruder moves
 M220 S100                            ; reset speed factor
 M221 S100                            ; reset flow factor
+M207 S0.8 F2100 Z0                   ; firmware retraction (G10): 0.8 mm at 35 mm/s, no firmware Z raise (the slicer handles Z hop). Overrides the firmware default of 5 mm / 40 mm/s / 0.2 mm raise
+M208 S0 F2100                        ; firmware recover (G11): no extra length, 35 mm/s
 M140 S[bed_temperature_initial_layer_single]   ; start heating the bed
 M104 S150                            ; warm the nozzle only enough to soften ooze (original: prevent ooze during homing)
 M190 S[bed_temperature_initial_layer_single]   ; wait for the bed; the mesh was built warm so probe warm

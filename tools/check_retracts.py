@@ -8,7 +8,7 @@ What it measures
 - Every G0/G1 move with an E value, in relative (M83) or absolute (M82) extruder mode; G92 E resets are followed.
 - "Depth": how far the filament is currently pulled back from the primed position. Retracts split over several
   moves (for example during a wipe) add up; extrusion and unretracts reduce it. The report uses the deepest value.
-- Firmware retraction: M207 S<length> above the limit, and G10 use (reported, because the length is then set by M207).
+- Firmware retraction: G10 counts as a retract of the last M207 S length and G11 undoes it. M207 S above the limit fails; G10 with no M207 in the file fails (length unknown) unless --fw-default is given.
 
 Usage
   python3 tools/check_retracts.py print.gcode            # exit 1 if any retract is deeper than 2 mm
@@ -27,7 +27,7 @@ E_WORD = re.compile(r"\bE(-?\d*\.?\d+)", re.I)
 S_WORD = re.compile(r"\bS(-?\d*\.?\d+)", re.I)
 
 
-def check(path, limit):
+def check(path, limit, fw_default=None):
     relative = False          # M82 absolute (default) / M83 relative
     e_pos = 0.0               # absolute-mode extruder position
     depth = 0.0               # current pulled-back amount (mm)
@@ -36,6 +36,8 @@ def check(path, limit):
     flagged = False
     fw_retract_used = 0
     fw_len = []               # (line, M207 length)
+    cur_fw = fw_default       # firmware retract length G10 uses: last M207 S in the file, else --fw-default
+    g10_unknown = 0           # G10 seen while the length is unknown
     with open(path, errors="replace") as fh:
         for n, raw in enumerate(fh, 1):
             line = raw.split(";", 1)[0].strip()
@@ -52,10 +54,25 @@ def check(path, limit):
                     e_pos = float(m.group(1))
             elif up.startswith("G10") and not up.startswith("G10 L"):
                 fw_retract_used += 1
+                if cur_fw is None:
+                    g10_unknown += 1
+                else:
+                    depth += cur_fw
+                    if depth > worst[0]:
+                        worst = (depth, n)
+                    if depth > limit + 1e-6 and not flagged:
+                        over.append((n, depth))
+                        flagged = True
+            elif up.startswith("G11"):
+                if cur_fw is not None:
+                    depth = max(0.0, depth - cur_fw)
+                    if depth <= limit + 1e-6:
+                        flagged = False
             elif up.startswith("M207"):
                 m = S_WORD.search(line)
                 if m:
-                    fw_len.append((n, float(m.group(1))))
+                    cur_fw = float(m.group(1))
+                    fw_len.append((n, cur_fw))
             elif MOVE.match(line):
                 m = E_WORD.search(line)
                 if not m:
@@ -75,21 +92,26 @@ def check(path, limit):
                     flagged = True
                 if depth <= limit + 1e-6:
                     flagged = False
-    return worst, over, fw_retract_used, fw_len
+    return worst, over, fw_retract_used, fw_len, g10_unknown
 
 
 def main():
     ap = argparse.ArgumentParser(description="Report retractions longer than a limit in a G-code file.")
     ap.add_argument("gcode")
     ap.add_argument("--max", type=float, default=2.0, help="longest allowed retract in mm (default 2.0)")
+    ap.add_argument("--fw-default", type=float, default=None,
+                    help="firmware retract length in mm to assume for G10 when the file has no M207 (the firmware default)")
     ap.add_argument("--warn-only", action="store_true", help="print problems but always exit 0")
     a = ap.parse_args()
-    worst, over, fw_used, fw_len = check(a.gcode, a.max)
+    worst, over, fw_used, fw_len, g10_unknown = check(a.gcode, a.max, a.fw_default)
     problems = []
     for n, d in over[:10]:
         problems.append(f"line {n}: retracted {d:.2f} mm (limit {a.max:g} mm)")
     if len(over) > 10:
         problems.append(f"... and {len(over) - 10} more")
+    if g10_unknown:
+        problems.append(f"{g10_unknown} G10 firmware retract(s) with no M207 in the file: the length comes from the "
+                        "firmware or EEPROM (unknown). Put M207 S<length> in the start G-code, or pass --fw-default.")
     for n, v in fw_len:
         if v > a.max + 1e-6:
             problems.append(f"line {n}: M207 firmware retract length {v:g} mm (limit {a.max:g} mm)")
