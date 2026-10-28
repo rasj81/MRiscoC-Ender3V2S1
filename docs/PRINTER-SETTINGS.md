@@ -68,8 +68,9 @@ Rebuild the full mesh warm (and `G29 S0` to save) after major changes: nozzle, p
 Not verified on this firmware: that `G29 J` runs and reaches its points inside the mesh bounds; that the saved mesh loads after any change to the point count.
 
 ## Orca G-code files (reviewed 2026-10-28; all untested on the printer)
+Retraction ceiling (owner rule, 2026-10-28): keep every retract at or below 2 mm on this direct drive (slicer 0.8 mm start, end-of-print 1.5 mm). No G-code command enforces this; it is enforced by the Orca retraction fields. Firmware pause/M600 retract (`PAUSE_PARK_RETRACT_LENGTH`) is 2 mm.
 - `gcode/start.gcode`: Orca's original start (left-edge prime at X2, Z0.28, two E10 passes) plus warm-bed probing, `G29 L0` mesh reload, `G29 J` tilt, `M420 S1 Z10`. Bed exclude area for the prime strip: `0x0,10x0,10x145,0x145`.
-- `gcode/end.gcode`: Orca's original end (lift above the print, present it at X5 / 80% of bed Y, raise the head, heaters and fan off, `M84 X Y E` so Z stays locked) plus a 2 mm retract and nozzle-off first. Needs Orca printable height 230 and firmware Z max 230.
+- `gcode/end.gcode`: Orca's original end (lift above the print, present it at X5 / 80% of bed Y, raise the head, heaters and fan off, `M84 X Y E` so Z stays locked) plus a 1.5 mm retract and nozzle-off first. Needs Orca printable height 230 and firmware Z max 230.
 - `gcode/before-layer-change.gcode`: unchanged. `G92 E0` is redundant with relative extrusion (`M83`) but harmless.
 - `gcode/pause.gcode`: `M25` is correct for this firmware (with PARK_HEAD_ON_PAUSE it calls `M125`, which pauses, retracts and parks). Do not use `M601`: this firmware has no `M601`.
 - `gcode/original/`: Orca's originals, kept verbatim.
