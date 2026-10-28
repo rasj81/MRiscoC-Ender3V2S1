@@ -41,7 +41,7 @@ E-steps (measured): [measure]
 ## Bed and limits (set on the printer screen, then `M500`)
 Reference [ref]: X min 0, Y min -5, X max 215, Y max 220, Z max 235; mesh 7x7, fade height 10, inset 10.
 Mine (measured 2026-10-27/28 in the current configuration): X 0 to 220, Y 0 to 220, Z max 230. The firmware's compiled Z_MAX_POS is 250, so set Z max to 230 on the printer screen and `M500` so the firmware never drives above the real limit. Mesh: 6x6, maximize area (see below), fade height 10.
-Orca printer profile: bed shape 220 x 220 mm, origin 0,0 (front-left), max print height 230 mm, bed exclude area `0x0,120x0,120x20,0x20` (purge strip of `gcode/start.gcode`; if Orca rejects the point format, draw the rectangle in its editor). Usable area: 220 x 220 minus the 120 x 20 strip.
+Orca printer profile: bed shape 220 x 220 mm, origin 0,0 (front-left), max print height 230 mm, bed exclude area `0x0,10x0,10x145,0x145` (left-edge prime strip of `gcode/start.gcode`; if Orca rejects the point format, draw the rectangle in its editor). Usable area: 220 x 220 minus a 10 x 145 strip.
 
 ## Heater tuning
 - Hotend uses MPC: run the autotune from the menu or `M306 T`, then `M500`. Reference PID values in the source post are not needed.
@@ -81,7 +81,7 @@ Orca Slicer / Bambu Studio terms. **Every value is a starting point from general
 | Travel speed | 150 mm/s | |
 | Bed mesh | UBL, fade height 10 | |
 | Printer end G-code | `M84 X Y E` | keeps Z motors locked so the gantry does not drop (dual Z) |
-| Printer start G-code | `gcode/start.gcode` in this repo (draft, untested): heat bed, `G28`, `G29 L0`, `G29 J`, `M420 S1 Z10`, heat nozzle, purge line | [measure] confirm the 3-point tilt reaches its points inside the mesh bounds and that the mesh stays active after `G28` |
+| Printer start G-code | `gcode/start.gcode` in this repo (merged with the original start 2026-10-28, untested): heat bed, `G28`, `G29 L0`, `G29 J`, `M420 S1 Z10`, then the original left-edge prime at X2 (Z0.28, two E10 passes) | [measure] confirm the 3-point tilt reaches its points inside the mesh bounds and that the mesh stays active after `G28` |
 
 ### Filament profiles (0.4 mm nozzle values)
 | | PLA | PLA+ | PLA Pro | PETG+ | ABS | ASA |

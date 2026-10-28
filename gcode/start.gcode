@@ -1,31 +1,35 @@
 ; Printer start G-code for Orca Slicer / Bambu Studio (Ender 3 V2 + Sprite Pro + CR Touch, Marlin UBL)
 ; Paste into: Printer settings > Machine G-code > Machine start G-code.
-; DRAFT 2026-10-27: not yet run on the printer. Test with the nozzle well above the bed
-; (hand on the power switch) the first time. Items marked [measure] need a real-world check.
-; Placeholders in [brackets] are Orca/Bambu Studio variables, filled in at slice time.
+; MERGED 2026-10-28: your original start sequence (heat, home, left-edge prime at X2, Z0.28, E10 passes)
+; plus the saved-mesh reload, 3-point tilt and leveling activation. The original is in git history (534f7be).
+; DRAFT: the merged file has not been run on the printer yet. Keep a hand on the power switch for the
+; first G29 J. Items marked [measure] need a real-world check.
+; Orca bed exclude area for the prime strip: 0x0,10x0,10x145,0x145
 
-M413 S0                              ; power-loss recovery off (remove if you use it)
+M413 S0                              ; power-loss recovery off (remove this line if you use it)
 G90                                  ; absolute positioning
 M83                                  ; relative extruder moves
 M220 S100                            ; reset speed factor
 M221 S100                            ; reset flow factor
 M140 S[bed_temperature_initial_layer_single]   ; start heating the bed
-M104 S150                            ; warm the nozzle only enough to soften ooze for probing
-M190 S[bed_temperature_initial_layer_single]   ; wait for the bed
-; Optional soak so the bed shape matches the saved mesh (the mesh was built warm): G4 S180   [measure]
+M104 S150                            ; warm the nozzle only enough to soften ooze (original: prevent ooze during homing)
+M190 S[bed_temperature_initial_layer_single]   ; wait for the bed; the mesh was built warm so probe warm
+; Optional extra soak: G4 S180   [measure]
 
 G28                                  ; home all axes
-G29 L0                               ; reload saved mesh slot 0 every print, so the tilt below never compounds
-G29 J                                ; 3-point tilt: corrects the saved mesh for how the bed sits today [measure: confirm the probe points are reachable]
-M420 S1 Z10                          ; activate leveling with 10 mm fade height
+G29 L0                               ; reload saved mesh slot 0 every print so the tilt below never compounds
+G29 J                                ; 3-point tilt of the saved mesh to today's bed level [measure: points reachable]
+M420 S1 Z10                          ; activate leveling, 10 mm fade height
+G1 Z10 F600                          ; move clear of the bed (original used Z50 at F240)
 
-M109 S[nozzle_temperature_initial_layer]       ; heat the nozzle to printing temperature
+G1 X2 Y10 F3000                      ; original prime start, left edge (outside the probed mesh, so leveling is extrapolated here)
+M104 S[nozzle_temperature_initial_layer]       ; final nozzle temperature
+M109 S[nozzle_temperature_initial_layer]       ; wait for the nozzle
+G1 Z0.28 F240                        ; original prime height
 G92 E0
-G1 Z5 F600                           ; lift before travel
-G1 X10 Y10 F5000                     ; purge line start (front-left, inside the 10 mm probe margin)
-G1 Z0.3 F600
-G1 X110 E10 F1200                    ; ~100 mm purge line, tuned for a 0.4 mm nozzle; change E for other nozzles [measure]
-G1 Y12 F2000
-G1 X10 E-0.8 F1200                   ; wipe back along the line
-G1 Z5 F600
+G1 Y140 E10 F1500                    ; prime pass 1 (original)
+G1 X2.3 F5000                        ; step over 0.3 mm (original)
 G92 E0
+G1 Y10 E10 F1200                     ; prime pass 2 (original)
+G92 E0
+G1 Z2 F600                           ; lift so the first travel does not drag the prime line (added)
