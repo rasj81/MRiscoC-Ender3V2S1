@@ -21,7 +21,7 @@ LEVELING = {"BLT", "AutoLev", "BQMPv2", "EZABLZI", "EZABLZN", "MM", "UBL"}
 DISPLAYS = {"DWIN", "CR10DSPLY", "DACAI", "SYNWIT", "TJC"}
 THERMISTORS = {"T1", "T5", "T13", "T20"}
 FEATURES = {
-    "corexy": "CoreXY", "cvlm": "CVLM", "freeflash": "FreeFlash",
+    "corexy": "CoreXY", "cvlm": "CVLM", "dd": "DD", "freeflash": "FreeFlash",
     "homeoffs": "HomeOffs", "is": "IS", "la": "LA",
     "locksteppers": "LockSteppers", "mpc": "MPC", "np": "NP",
     "repeat_depth": "Repeat&Depth", "sdreadonly": "SDReadOnly",

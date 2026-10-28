@@ -35,25 +35,62 @@ def int_define(text, name):
 
 
 def patch_park_point(text, adv_text):
-    """The generator parks the nozzle at {X_BED_SIZE+10, Y_MAX_POS-10, 20}. That is beyond the real travel of an
-    Ender 3 V2 with a Sprite Pro (measured 220 x 220), and Marlin's park move is not clamped by the soft
-    limits, so pause, M600 and the runout script would drive the carriage into the frame. Park inside the bed
-    instead: 20 mm in from the bed size, at most 200, keeping the generator's Z raise."""
-    xb, yb = int_define(text, "X_BED_SIZE"), int_define(text, "Y_BED_SIZE")
+    """The generator parks the nozzle at {X_BED_SIZE+10, Y_MAX_POS-10, 20}, outside the bed. Park inside the
+    configured travel instead: 30 mm in from the smaller of the bed size and the max position, never below the
+    min position; keep the generator's Z raise. (A runtime clamp to the printer's own limits is added by
+    patch_nozzle_park.)"""
+    v = {n: int_define(text, n) for n in ("X_BED_SIZE", "Y_BED_SIZE", "X_MAX_POS", "Y_MAX_POS", "X_MIN_POS", "Y_MIN_POS")}
     pat = re.compile(r"(?m)^([ \t]*#define[ \t]+NOZZLE_PARK_POINT[ \t]+)\{([^}]*)\}[^\n]*$")
     m = pat.search(text)
-    if not m or xb is None or yb is None:
+    if not m or None in v.values():
         if active_define(adv_text, "PARK_HEAD_ON_PAUSE"):
-            sys.exit("park point: PARK_HEAD_ON_PAUSE is active but NOZZLE_PARK_POINT or the bed size was not found")
+            sys.exit("park point: PARK_HEAD_ON_PAUSE is active but NOZZLE_PARK_POINT or a bed/position limit was not found")
         return text, None
     z = m.group(2).split(",")[-1].strip()
-    x, y = min(200, xb - 20), min(200, yb - 20)
+    x = max(v["X_MIN_POS"], min(v["X_BED_SIZE"], v["X_MAX_POS"]) - 30)
+    y = max(v["Y_MIN_POS"], min(v["Y_BED_SIZE"], v["Y_MAX_POS"]) - 30)
     point = f"{{ {x}, {y}, {z} }}"
-    new = f"{m.group(1)}{point}  // CI: inside the real travel; the generator default parks outside it"
+    new = f"{m.group(1)}{point}  // CI: inside the configured travel; the generator default parks outside it"
     return text[:m.start()] + new + text[m.end():], point
 
 
-PAUSE_RETRACT_MM = "1.5"  # owner rule: no retract above 2 mm on this direct drive; pause/M600 retract stays under it
+def patch_source(path, old, new, what):
+    """Exact-text source patch; fails the build if the upstream code changed under us."""
+    text = path.read_text()
+    if text.count(old) != 1:
+        sys.exit(f"{what}: expected text not found exactly once in {path.name}; upstream changed, update ci/build.py")
+    path.write_text(text.replace(old, new, 1))
+
+
+def patch_nozzle_park(src):
+    """Clamp the XY park move to the printer's runtime software endstops (the limits set on the printer), so a
+    park point beyond the real travel can never drive the carriage into the frame."""
+    f = src / "libs" / "nozzle.cpp"
+    t = f.read_text()
+    if "park_c" in t:
+        return
+    head = "      constexpr feedRate_t fr_xy = NOZZLE_PARK_XY_FEEDRATE;\n"
+    patch_source(f, head, head + "      xyz_pos_t park_c = park; apply_motion_limits(park_c); // CI: stay inside the soft endstops\n", "park clamp")
+    t = f.read_text()
+    for old, new in (("do_blocking_move_to_xy(park, fr_xy)", "do_blocking_move_to_xy(park_c, fr_xy)"),
+                     ("do_blocking_move_to_x(park.x, fr_xy)", "do_blocking_move_to_x(park_c.x, fr_xy)"),
+                     ("do_blocking_move_to_y(park.y, fr_xy)", "do_blocking_move_to_y(park_c.y, fr_xy)")):
+        if old not in t:
+            sys.exit(f"park clamp: {old!r} not found in nozzle.cpp")
+        t = t.replace(old, new)
+    f.write_text(t)
+
+
+def patch_retract_cap(src):
+    """DD: cap the firmware retract length at MAX_RETRACT_MM (M207 S and the EEPROM value both go through it)."""
+    f = src / "feature" / "fwretract.cpp"
+    patch_source(f, "if (parser.seenval('S')) settings.retract_length        = parser.value_axis_units(E_AXIS);",
+                 f"if (parser.seenval('S')) settings.retract_length        = _MIN(parser.value_axis_units(E_AXIS), {MAX_RETRACT_MM}f); // CI: DD cap",
+                 "retract cap")
+
+
+PAUSE_RETRACT_MM = "1.0"  # DD: pause/M600 initial retract (generator default 2)
+MAX_RETRACT_MM = "2.0"    # DD: hard cap on the firmware retract length (M207 S), source patch
 
 
 def patch_pause_retract(adv_text):
@@ -66,6 +103,26 @@ def patch_pause_retract(adv_text):
     return pat.sub(lambda m: m.group(1) + PAUSE_RETRACT_MM, adv_text, count=1), PAUSE_RETRACT_MM
 
 
+FWRETRACT_DEFAULTS = {  # DD: direct-drive firmware retraction defaults (generator ships Bowden values: 5 mm, 40 mm/s, 0.2 mm raise)
+    "RETRACT_LENGTH": "0.8",
+    "RETRACT_FEEDRATE": "35",
+    "RETRACT_ZRAISE": "0",
+    "RETRACT_RECOVER_FEEDRATE": "35",
+}
+
+
+def patch_fwretract(adv_text):
+    """Replace the generator's Bowden firmware-retraction defaults (5 mm, 40 mm/s, 0.2 mm raise)."""
+    if not active_define(adv_text, "FWRETRACT"):
+        return adv_text, None
+    for name, value in FWRETRACT_DEFAULTS.items():
+        pat = re.compile(rf"(?m)^([ \t]*#define[ \t]+{name}[ \t]+)[\d.]+")
+        if not pat.search(adv_text):
+            sys.exit(f"firmware retraction: FWRETRACT is active but {name} was not found")
+        adv_text = pat.sub(lambda m: m.group(1) + value, adv_text, count=1)
+    return adv_text, ", ".join(f"{k}={v}" for k, v in FWRETRACT_DEFAULTS.items())
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--gen", required=True, help="path to Special_Configurations checkout")
@@ -76,6 +133,8 @@ def main():
     args = ap.parse_args()
 
     features = [f for f in args.features.split(",") if f]
+    dd = "DD" in features
+    features = [f for f in features if f != "DD"]  # CI-side option: the generator does not know it
     mname = args.machine_name or args.name
     if len(mname) > 32:
         sys.exit(f"machine name {mname!r} is {len(mname)} chars; Marlin allows 32 at most")
@@ -94,7 +153,10 @@ def main():
     conf_h = (out / "Configuration.h").read_text()
     conf_adv = (out / "Configuration_adv.h").read_text()
     conf_h, park = patch_park_point(conf_h, conf_adv)
-    conf_adv, pause_retract = patch_pause_retract(conf_adv)
+    pause_retract = fwr = None
+    if dd:
+        conf_adv, pause_retract = patch_pause_retract(conf_adv)
+        conf_adv, fwr = patch_fwretract(conf_adv)
     (out / "Configuration.h").write_text(conf_h)
     (out / "Configuration_adv.h").write_text(conf_adv)
     cfg = conf_h + conf_adv
@@ -111,8 +173,12 @@ def main():
     for fname in ("Configuration.h", "Configuration_adv.h", "Version.h"):
         shutil.copy(out / fname, repo / "Marlin" / fname)
     shutil.copy(out / "platformio.ini", repo / "platformio.ini")
+    if active_define(cfg, "PARK_HEAD_ON_PAUSE") or active_define(conf_adv, "ADVANCED_PAUSE_FEATURE"):
+        patch_nozzle_park(repo / "Marlin" / "src")
+    if dd and active_define(cfg, "FWRETRACT") or dd and active_define(conf_adv, "FWRETRACT"):
+        patch_retract_cap(repo / "Marlin" / "src")
     m = re.search(r"(?m)^[ \t]*#define[ \t]+TEMP_SENSOR_0[ \t]+(\S+)", cfg)
-    print(f"OK {mname} (file name {args.name}): options={features} TEMP_SENSOR_0={m.group(1) if m else '?'} NOZZLE_PARK_POINT={park or 'unchanged'} PAUSE_PARK_RETRACT_LENGTH={pause_retract or 'unchanged'}")
+    print(f"OK {mname} (file name {args.name}): options={features} DD={dd} TEMP_SENSOR_0={m.group(1) if m else '?'} NOZZLE_PARK_POINT={park or 'unchanged'} PAUSE_PARK_RETRACT_LENGTH={pause_retract or 'unchanged'} FWRETRACT=[{fwr or 'off'}]")
 
 
 if __name__ == "__main__":

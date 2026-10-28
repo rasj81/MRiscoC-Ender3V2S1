@@ -90,6 +90,10 @@ on:
         description: "Custom only: CVLM"
         type: boolean
         default: false
+      dd:
+        description: "Custom only: DD - Direct drive extruder (1.0 mm pause/M600 retract, 0.8 mm firmware retraction, 2 mm retract cap)"
+        type: boolean
+        default: false
       freeflash:
         description: "Custom only: FreeFlash"
         type: boolean

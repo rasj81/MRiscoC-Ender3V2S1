@@ -10,7 +10,8 @@
     "T13",
     "LA",
     "IS",
-    "MPC"
+    "MPC",
+    "DD"
   ],
   "notes": "Direct drive, Creality Sprite Pro, CR Touch, T13 thermistor, 512 kB (RET6) board"
 }
