@@ -29,6 +29,30 @@ def active_define(text, name, value=None):
     return value is None or m.group(1) == value
 
 
+def int_define(text, name):
+    m = re.search(rf"(?m)^[ \t]*#define[ \t]+{name}[ \t]+(\d+)", text)
+    return int(m.group(1)) if m else None
+
+
+def patch_park_point(text, adv_text):
+    """The generator parks the nozzle at {X_BED_SIZE+10, Y_MAX_POS-10, 20}. That is beyond the real travel of an
+    Ender 3 V2 with a Sprite Pro (measured 220 x 220), and Marlin's park move is not clamped by the soft
+    limits, so pause, M600 and the runout script would drive the carriage into the frame. Park inside the bed
+    instead: 20 mm in from the bed size, at most 200, keeping the generator's Z raise."""
+    xb, yb = int_define(text, "X_BED_SIZE"), int_define(text, "Y_BED_SIZE")
+    pat = re.compile(r"(?m)^([ \t]*#define[ \t]+NOZZLE_PARK_POINT[ \t]+)\{([^}]*)\}[^\n]*$")
+    m = pat.search(text)
+    if not m or xb is None or yb is None:
+        if active_define(adv_text, "PARK_HEAD_ON_PAUSE"):
+            sys.exit("park point: PARK_HEAD_ON_PAUSE is active but NOZZLE_PARK_POINT or the bed size was not found")
+        return text, None
+    z = m.group(2).split(",")[-1].strip()
+    x, y = min(200, xb - 20), min(200, yb - 20)
+    point = f"{{ {x}, {y}, {z} }}"
+    new = f"{m.group(1)}{point}  // CI: inside the real travel; the generator default parks outside it"
+    return text[:m.start()] + new + text[m.end():], point
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--gen", required=True, help="path to Special_Configurations checkout")
@@ -54,7 +78,11 @@ def main():
         sys.exit("generator reported an error")
 
     out = gen / mname
-    cfg = (out / "Configuration.h").read_text() + (out / "Configuration_adv.h").read_text()
+    conf_h = (out / "Configuration.h").read_text()
+    conf_adv = (out / "Configuration_adv.h").read_text()
+    conf_h, park = patch_park_point(conf_h, conf_adv)
+    (out / "Configuration.h").write_text(conf_h)
+    cfg = conf_h + conf_adv
     missing = []
     for code in features:
         if code in EXPECT:
@@ -69,7 +97,7 @@ def main():
         shutil.copy(out / fname, repo / "Marlin" / fname)
     shutil.copy(out / "platformio.ini", repo / "platformio.ini")
     m = re.search(r"(?m)^[ \t]*#define[ \t]+TEMP_SENSOR_0[ \t]+(\S+)", cfg)
-    print(f"OK {mname} (file name {args.name}): options={features} TEMP_SENSOR_0={m.group(1) if m else '?'}")
+    print(f"OK {mname} (file name {args.name}): options={features} TEMP_SENSOR_0={m.group(1) if m else '?'} NOZZLE_PARK_POINT={park or 'unchanged'}")
 
 
 if __name__ == "__main__":

@@ -73,7 +73,7 @@ Not verified on this firmware: that `G29 J` runs and reaches its points inside t
 - `gcode/before-layer-change.gcode`: unchanged. `G92 E0` is redundant with relative extrusion (`M83`) but harmless.
 - `gcode/pause.gcode`: `M25` is correct for this firmware (with PARK_HEAD_ON_PAUSE it calls `M125`, which pauses, retracts and parks). Do not use `M601`: this firmware has no `M601`.
 - `gcode/original/`: Orca's originals, kept verbatim.
-- WARNING (park point): the compiled park point is `NOZZLE_PARK_POINT {X_BED_SIZE+10, Y_MAX_POS-10, 20}` = X 240, Y 221. Your measured travel is 220 x 220, and Marlin's park move (`do_blocking_move_to`) is not clamped by the soft limits. The pause button, `M25`, `M600` and the filament runout script (`M600`) all park there. Until the firmware park point is changed, avoid pausing and do not rely on the runout sensor.
+- Park point (fixed in CI 2026-10-28, NOT yet in the flashed firmware): the generator's default `NOZZLE_PARK_POINT {X_BED_SIZE+10, Y_MAX_POS-10, 20}` = X 240, Y 221 is outside your 220 x 220 travel, and Marlin's park move is not clamped by the soft limits. `ci/build.py` now rewrites it to `{ 200, 200, 20 }` (20 mm in from the bed size, at most 200) and fails the build if it cannot. It takes effect only after you run a new build and flash it. Until then: do not pause, and do not trust the runout sensor.
 
 ## Slicer settings by filament type and nozzle size
 
@@ -155,4 +155,4 @@ Flashed and running. Done: MPC autotune, bed PID autotune, `M503` output saved. 
 8. Smart filament sensor: needs the firmware option (not in the generator feature list).
 9. `M503` saved once; save a new copy after the remaining tuning.
 10. CI follow-ups: GitHub Releases for builds, `BUILDS.md`, cleanup action, clean/experimental tiers.
-11. Firmware park point: change `NOZZLE_PARK_POINT` to a spot inside X 0 to 220, Y 0 to 220 (for example X 200, Y 200, Z raise 20), via a post-generation patch in `ci/build.py`, rebuild and flash. Until then do not pause, and treat the runout sensor as unsafe.
+11. Firmware park point: patched in `ci/build.py` (70a9724+). Run "Build custom firmware", flash the new .bin, then confirm with a pause test at a safe moment (hand on the power switch). Until flashed, do not pause and treat the runout sensor as unsafe.
