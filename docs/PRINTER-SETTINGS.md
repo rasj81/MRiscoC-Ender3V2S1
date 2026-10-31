@@ -1,6 +1,6 @@
 # Ender 3 V2 printer settings reference
 
-See also the working profile: `docs/profiles/ender-3-v2-project-ferrari.md` (Ender 3 V2 Project Ferrari).
+This file is the standard profile. The planned speed-optimised variant is `docs/profiles/ender-3-v2-project-ferrari.md` (Ender 3 V2 Project Ferrari).
 
 Hardware: Ender 3 V2, 4.2.2 board (STM32F103RET6, 512 kB), DWIN display, Creality Sprite Pro direct drive with its built-in CR Touch mount, dual Z (splitter cable, timing belt sync), smart filament sensor. Fallback: previous Bowden setup.
 
@@ -141,7 +141,7 @@ Per nozzle change: re-check flow ratio and Linear Advance K, set retraction a li
 ### Tuned results log (fill in)
 | Filament | Nozzle | Temp | Flow | LA K | Retraction | Max vol. | Date |
 |---|---|---|---|---|---|---|---|
-| Red PLA+ (brand blend) | 0.4 mm stainless, Sprite Pro | 210 C (tower 190-230, 5 C steps; 190-200 curled overhangs, 225-230 glossy and drooping) | [measure] next | 0.03 (Orca PA pattern, 0-0.1 step 0.005, owner's pick 2026-10-30; slicer M900 K) | [measure] | 13 mm3/s (tower 5/20/0.5 assumed: first defect and adhesion loss at 20.5 mm = 15.25 mm3/s, set about 85 %) | 2026-10-30 |
+| Red PLA+ (brand blend) | 0.4 mm stainless, Sprite Pro | 210 C (tower 190-230, 5 C steps; 190-200 curled overhangs, 225-230 glossy and drooping) | 0.936 (pass 2 pick -2, 2026-10-31) | 0.03 (Orca PA pattern, 0-0.1 step 0.005, owner's pick 2026-10-30; slicer M900 K) | [measure] | 13 mm3/s (tower 5/20/0.5 assumed: first defect and adhesion loss at 20.5 mm = 15.25 mm3/s, set about 85 %) | 2026-10-30 |
 | | | [measure] | [measure] | [measure] | [measure] | [measure] | |
 
 ### Calibration order per new filament (from the 3d-printing skill)
