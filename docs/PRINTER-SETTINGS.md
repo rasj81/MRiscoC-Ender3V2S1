@@ -1,5 +1,7 @@
 # Ender 3 V2 printer settings reference
 
+See also the working profile: `docs/profiles/ender-3-v2-project-ferrari.md` (Ender 3 V2 Project Ferrari).
+
 Hardware: Ender 3 V2, 4.2.2 board (STM32F103RET6, 512 kB), DWIN display, Creality Sprite Pro direct drive with its built-in CR Touch mount, dual Z (splitter cable, timing belt sync), smart filament sensor. Fallback: previous Bowden setup.
 
 Provenance tags: **[config]** read from the generated firmware config; **[ref]** one other user's working values (mriscoc/Ender3V2S1 discussion #883); **[memory]** recalled, unconfirmed; **[measure]** fill in from your own printer.
@@ -18,7 +20,7 @@ Flash: copy only the `.bin` to the SD root (FAT32), use a new file name each tim
 |---|---|---|
 | X, Y steps/mm | 80, 80 | standard; verify with a 100 mm print only if prints are off |
 | Z steps/mm | 400 | unchanged by the splitter and belt |
-| E steps/mm | **93 (stock Bowden)** | wrong for the Sprite Pro. Start near 424.9 [memory, from Creality's Ender-3 S1 Sprite config], then calibrate. |
+| E steps/mm | **93 (stock Bowden)** | wrong for the Sprite Pro. 424.9, measured and confirmed 2026-10-30 (120 mm mark, 100 mm extrude, no change needed). |
 | Max feedrate X/Y/Z/E | 500, 500, 10, 45 mm/s | |
 | Max acceleration X/Y/Z/E | 500, 500, 100, 1000 | |
 | Print acceleration | 500 | |
@@ -139,17 +141,18 @@ Per nozzle change: re-check flow ratio and Linear Advance K, set retraction a li
 ### Tuned results log (fill in)
 | Filament | Nozzle | Temp | Flow | LA K | Retraction | Max vol. | Date |
 |---|---|---|---|---|---|---|---|
+| Red PLA+ (brand blend) | 0.4 mm stainless, Sprite Pro | 210 C (tower 190-230, 5 C steps; 190-200 curled overhangs, 225-230 glossy and drooping) | [measure] next | 0.03 (Orca PA pattern, 0-0.1 step 0.005, owner's pick 2026-10-30; slicer M900 K) | [measure] | 13 mm3/s (tower 5/20/0.5 assumed: first defect and adhesion loss at 20.5 mm = 15.25 mm3/s, set about 85 %) | 2026-10-30 |
 | | | [measure] | [measure] | [measure] | [measure] | [measure] | |
 
 ### Calibration order per new filament (from the 3d-printing skill)
 Temperature tower, flow rate, Linear Advance K, retraction, then (once only) Input Shaping. Record each result in the log above.
 
 ## Status (2026-10-28)
-Flashed and running. Done: MPC autotune, bed PID autotune, `M503` output saved. Measured: probe X -31.2, Y -42.1, Z offset -2.82. Still borrowed or unverified: E steps 424.9, bed limits from the reference post; Z offset still needs the first-layer confirmation.
+Flashed and running. Done: MPC autotune, bed PID autotune, `M503` output saved. Measured: probe X -31.2, Y -42.1, Z offset -2.82. Still borrowed or unverified: bed limits from the reference post; Z offset still needs the first-layer confirmation.
 
 ## Open items
 1. Z offset: -2.82 measured; confirm on the first-layer print (live adjust 0.02 to 0.05 mm), then `M500`.
-2. Verify E steps by measuring (120 mm mark, extrude 100 mm).
+2. ~~Verify E steps~~ done 2026-10-30: measured by the 120 mm / 100 mm test, 424.9 confirmed, no change.
 3. Probe offsets measured; check bed limits slowly at each edge and update the mesh bounds if they change.
 4. ~~Bed PID autotune~~ done.
 5. Build and save the UBL mesh (bed warm), slot 0, activate.
