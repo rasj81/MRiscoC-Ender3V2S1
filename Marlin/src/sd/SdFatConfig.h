@@ -70,7 +70,11 @@
  * SPI init rate for SD initialization commands. Must be 5 (F_CPU/64)
  * or 6 (F_CPU/128).
  */
-#define SPI_SD_INIT_RATE 5
+#if ENABLED(SD_SPI_MODE)
+  #define SPI_SD_INIT_RATE 6  // slowest: the card lines run through an adapter and the SD-WIFI board
+#else
+  #define SPI_SD_INIT_RATE 5
+#endif
 
 /**
  * Set the SS pin high for hardware SPI.  If SS is chip select for another SPI

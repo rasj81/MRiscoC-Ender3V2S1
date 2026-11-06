@@ -40,7 +40,11 @@
 
 #if DISABLED(SD_NO_DEFAULT_TIMEOUT)
   #ifndef SD_INIT_TIMEOUT
-    #define SD_INIT_TIMEOUT 2000U   // (ms) Init timeout
+    #if ENABLED(SD_SPI_MODE)
+      #define SD_INIT_TIMEOUT 500U  // (ms) Fail fast: a poor connection must not stall startup
+    #else
+      #define SD_INIT_TIMEOUT 2000U   // (ms) Init timeout
+    #endif
   #elif SD_INIT_TIMEOUT < 0
     #error "SD_INIT_TIMEOUT must be greater than or equal to 0."
   #endif
