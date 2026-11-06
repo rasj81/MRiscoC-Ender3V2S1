@@ -112,25 +112,36 @@ def main():
     # Scheduled/no-input runs build every preset from upstream.
     preset = inputs.get("preset", "ALL")
     repo = os.environ.get("GITHUB_REPOSITORY", "rasj81/MRiscoC-Ender3V2S1")
+    date = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
+
+    def make_source(fork):
+        src = {"source_repo": repo if fork else "mriscoc/Ender3V2S1", "firmware_ref": "", "date": date}
+        src["firmware_ref"] = resolve_ref(src["source_repo"], inputs.get("firmware_ref", "").strip())
+        return src
+
     use_fork = inputs.get("firmware_source") == "this-fork"
-    source = {
-        "source_repo": repo if use_fork else "mriscoc/Ender3V2S1",
-        "firmware_ref": "",
-        "date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d"),
-    }
-    source["firmware_ref"] = resolve_ref(source["source_repo"], inputs.get("firmware_ref", "").strip())
     # SPI = read the onboard SD slot in SPI mode (Marlin SD_SPI_MODE). The code for it lives in this fork's
-    # source, so building it from upstream would silently produce a normal SDIO firmware: refuse that.
+    # source, so an SPI build always comes from the fork (building it from upstream would silently produce a
+    # normal SDIO firmware). Scheduled / ALL runs from upstream skip the SPI presets.
     spi = inputs.get("spi") == "true"
-    if spi and not use_fork:
-        sys.exit("SPI needs firmware_source = this-fork (and a firmware_ref that has SD_SPI_MODE, e.g. sd-spi-mode)")
     extra = ["SPI"] if spi else []
+
+    def preset_item(name):
+        data = json.loads((PRESET_DIR / f"{name}.json").read_text())
+        needs_fork = spi or "SPI" in data["features"]
+        return from_preset(name, make_source(use_fork or needs_fork), extra)
+
     if preset == "ALL":
-        include = [from_preset(p.stem, source, extra) for p in sorted(PRESET_DIR.glob("*.json"))]
+        names = [p.stem for p in sorted(PRESET_DIR.glob("*.json"))]
+        if not use_fork:
+            names = [n for n in names if "SPI" not in json.loads((PRESET_DIR / f"{n}.json").read_text())["features"]]
+        include = [preset_item(n) for n in names]
     elif preset == "custom":
-        include = [from_form(inputs, source)]
+        include = [from_form(inputs, make_source(use_fork or spi))]
     else:
-        include = [from_preset(preset, source, extra)]
+        include = [preset_item(preset)]
+    if any("SPI" in i["features"] for i in include) and not use_fork:
+        print("SPI build: using this fork as the firmware source", file=sys.stderr)
     matrix = json.dumps({"include": include})
     print(matrix)
     out = os.environ.get("GITHUB_OUTPUT")

@@ -24,7 +24,7 @@ on:
         description: "Saved preset (custom = use the options below, ALL = every preset)"
         type: choice
         default: ender3v2-sprite
-        options: [custom, ALL, ender3v2-sprite, ender3v2-bowden]
+        options: [custom, ALL, ender3v2-sprite, ender3v2-sprite-spi, ender3v2-bowden]
       env:
         description: "Custom only: PlatformIO environment (RET6 board = STM32F103RE_creality)"
         type: string
@@ -111,7 +111,7 @@ on:
         type: boolean
         default: false
       spi:
-        description: "Any preset or custom: SPI - read the onboard SD slot in SPI mode (for the FYSETC SD-WIFI). Needs firmware_source = this-fork and a firmware_ref that has SD_SPI_MODE (sd-spi-mode)."
+        description: "Any preset or custom: SPI - read the onboard SD slot in SPI mode (for the FYSETC SD-WIFI). The firmware source switches to this fork automatically; firmware_ref must have SD_SPI_MODE (blank = default branch)."
         type: boolean
         default: false
 

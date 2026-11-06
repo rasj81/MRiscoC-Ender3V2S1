@@ -1,0 +1,18 @@
+{
+  "label": "Ender3V2-Sprite-SPI",
+  "env": "STM32F103RE_creality",
+  "features": [
+    "Ender3V2",
+    "422",
+    "DWIN",
+    "BLT",
+    "UBL",
+    "T13",
+    "LA",
+    "IS",
+    "MPC",
+    "DD",
+    "SPI"
+  ],
+  "notes": "Direct drive, Creality Sprite Pro, CR Touch, T13 thermistor, 512 kB (RET6) board; SPI: onboard SD slot read in SPI mode so the FYSETC SD-WIFI can share it (power-loss recovery off, card not mounted at startup). Always built from this fork."
+}
