@@ -65,6 +65,23 @@ def patch_spi_mode(conf_h):
     return conf_h[:m.end()] + "\n#define SD_SPI_MODE  // CI: SPI option, onboard SD slot read in SPI mode" + conf_h[m.end():]
 
 
+def patch_spi_ignore_startup(adv_text):
+    """SPI: don't mount the card while Marlin starts. With the SD-WIFI board in an SD-to-microSD adapter the
+    printer did not finish booting in SPI mode; mounting later (menu, or re-inserting the card) works.
+    Marlin refuses this together with POWER_LOSS_RECOVERY, so that and its menu item (PLR_TUNE_ITEM) go off
+    in SPI builds. (They are off at runtime on this printer anyway: M413 S0.)"""
+    if not re.search(r"(?m)^[ \t]*(//[ \t]*)?#define[ \t]+SD_IGNORE_AT_STARTUP\b", adv_text):
+        sys.exit("SPI: SD_IGNORE_AT_STARTUP not found in the generated Configuration_adv.h")
+    adv_text = re.sub(r"(?m)^([ \t]*)//[ \t]*(#define[ \t]+SD_IGNORE_AT_STARTUP\b)", r"\1\2", adv_text, count=1)
+    return adv_text
+
+
+def patch_spi_no_plr(text):
+    for name in ("POWER_LOSS_RECOVERY", "PLR_TUNE_ITEM"):
+        text = re.sub(rf"(?m)^([ \t]*)(#define[ \t]+{name}\b[^\n]*)$", r"\1//\2  // CI: off with SPI (SD_IGNORE_AT_STARTUP)", text, count=1)
+    return text
+
+
 def check_spi_source(src):
     """The SPI option only exists in this fork's firmware source; stop if the checkout doesn't have it."""
     pins = src / "pins" / "stm32f1" / "pins_CREALITY_V4.h"
@@ -176,6 +193,8 @@ def main():
     if spi:
         check_spi_source(target / "Marlin" / "src")
         conf_h = patch_spi_mode(conf_h)
+        conf_adv = patch_spi_no_plr(patch_spi_ignore_startup(conf_adv))
+        conf_h = patch_spi_no_plr(conf_h)
     pause_retract = fwr = None
     if dd:
         conf_adv, pause_retract = patch_pause_retract(conf_adv)
@@ -186,6 +205,10 @@ def main():
     missing = []
     if spi and not active_define(cfg, "SD_SPI_MODE"):
         missing.append("SPI: SD_SPI_MODE not active")
+    if spi and not active_define(cfg, "SD_IGNORE_AT_STARTUP"):
+        missing.append("SPI: SD_IGNORE_AT_STARTUP not active")
+    if spi and (active_define(cfg, "POWER_LOSS_RECOVERY") or active_define(cfg, "PLR_TUNE_ITEM")):
+        missing.append("SPI: POWER_LOSS_RECOVERY / PLR_TUNE_ITEM still active")
     for code in features:
         if code in EXPECT:
             define, value = EXPECT[code]
