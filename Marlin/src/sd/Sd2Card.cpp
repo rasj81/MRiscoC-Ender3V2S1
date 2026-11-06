@@ -193,9 +193,22 @@ uint32_t DiskIODriver_SPI_SD::cardSize() {
 void DiskIODriver_SPI_SD::chipDeselect() {
   extDigitalWrite(chipSelectPin_, HIGH);
   spiSend(0xFF); // Ensure MISO goes high impedance
+  #if ENABLED(SD_SPI_MODE)
+    // Let go of the shared card lines between transactions so another master (the SD-WIFI board) can use the card.
+    // Weak pull-ups keep them idle-high while nobody drives them.
+    SET_INPUT_PULLUP(SD_SS_PIN);
+    SET_INPUT_PULLUP(SD_SCK_PIN);
+    SET_INPUT_PULLUP(SD_MOSI_PIN);
+  #endif
 }
 
 void DiskIODriver_SPI_SD::chipSelect() {
+  #if ENABLED(SD_SPI_MODE)
+    // Take the lines back, idle-high, before selecting the card.
+    OUT_WRITE(SD_SS_PIN, HIGH);
+    OUT_WRITE(SD_SCK_PIN, HIGH);
+    OUT_WRITE(SD_MOSI_PIN, HIGH);
+  #endif
   spiInit(spiRate_);
   extDigitalWrite(chipSelectPin_, LOW);
 }
