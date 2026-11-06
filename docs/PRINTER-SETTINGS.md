@@ -165,4 +165,4 @@ Running the SPI firmware (power-loss recovery off). Max acceleration X/Y raised 
 9. `M503` saved once; save a new copy after the remaining tuning.
 10. CI follow-ups: GitHub Releases for builds, `BUILDS.md`, cleanup action, clean/experimental tiers.
 11. Firmware park point: patched in `ci/build.py` (70a9724+). Run "Build custom firmware", flash the new .bin, then confirm with a pause test at a safe moment (hand on the power switch). Until flashed, do not pause and treat the runout sensor as unsafe.
-12. Input shaping: ringing tower per axis (X and Y differ on a bed-slinger), set `M593 X F.. D..` / `M593 Y F.. D..`, `M500`, then judge the new 2000-3000 acceleration by print quality.
+12. Input shaping: ringing tower per axis (X and Y differ on a bed-slinger), set `M593 X F.. D..` / `M593 Y F.. D..`, `M500`, then judge the new 2000-3000 acceleration by print quality. Test files: `gcode/accel-test-2000-3000.gcode` (print 2000, travel 3000) and `gcode/accel-baseline-500.gcode` (back to 500).
