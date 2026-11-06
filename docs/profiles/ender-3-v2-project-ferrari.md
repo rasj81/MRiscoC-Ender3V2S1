@@ -15,6 +15,7 @@ Project Ferrari is the **speed-optimised variant** of the standard Ender 3 V2 pr
 | Travel | 150 | n/a |
 
 ## Acceleration targets (mm/s2): conservative until input shaping is tuned
+Note 2026-11-06: the standard profile in the firmware already runs 2000 print / 3000 travel (max 3000), so the 500 targets below are older and lower than the standard now. Revisit these numbers after input shaping is tuned.
 | Setting | Target |
 |---|---|
 | Normal, outer wall, inner wall | 500 |

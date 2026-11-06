@@ -21,9 +21,9 @@ Flash: copy only the `.bin` to the SD root (FAT32), use a new file name each tim
 | X, Y steps/mm | 80, 80 | standard; verify with a 100 mm print only if prints are off |
 | Z steps/mm | 400 | unchanged by the splitter and belt |
 | E steps/mm | **93 (stock Bowden)** | wrong for the Sprite Pro. 424.9, measured and confirmed 2026-10-30 (120 mm mark, 100 mm extrude, no change needed). |
-| Max feedrate X/Y/Z/E | 500, 500, 10, 45 mm/s | |
-| Max acceleration X/Y/Z/E | 500, 500, 100, 1000 | |
-| Print acceleration | 500 | |
+| Max feedrate X/Y/Z/E | 500, 500, 10, 45 mm/s | on the printer (`M503` 2026-11-06): 500, 500, 10, 60 |
+| Max acceleration X/Y/Z/E | 500, 500, 100, 1000 | on the printer since 2026-11-06: **3000, 3000, 500, 5000** (X/Y were 500 until then; raised after the speed review, `M201`) |
+| Print acceleration | 500 | on the printer since 2026-11-06: **2000** print, 3000 travel, 1000 retract (`M204 P2000 R1000 T3000`); was 500 / 1000 / 500 |
 | Homing feedrate X/Y/Z | 50, 50, 10 mm/s | |
 | Probe travel (XY) | 12,000 mm/min | |
 | Probe Z fast / slow | 960 / 480 mm/min | other user used Z feed rate 480 [ref] |
@@ -90,7 +90,7 @@ Orca Slicer / Bambu Studio terms. **Every value is a starting point from general
 | Walls | Arachne generator | thin features and small text print instead of being skipped |
 | Seam | scarf seam, contour | hides the seam on round parts |
 | Infill | Gyroid (strength), Adaptive Cubic (save filament), Lightning (display only); avoid Grid | see the printpal and Creality notes in the 3d-printing skill |
-| Acceleration | 500 (firmware default); raise only after Input Shaping is tuned | |
+| Acceleration | Match the firmware: 2000 print, 3000 travel (since 2026-11-06; was 500) | Input shaping is still the untuned 40 Hz / 0.15 on both axes: tune each axis with a ringing tower, then re-check quality at this acceleration |
 | Travel speed | 150 mm/s | |
 | Bed mesh | UBL, fade height 10 | |
 | Printer end G-code | `M84 X Y E` | keeps Z motors locked so the gantry does not drop (dual Z) |
@@ -150,6 +150,9 @@ Temperature tower, flow rate, Linear Advance K, retraction, then (once only) Inp
 ## Status (2026-10-28)
 Flashed and running. Done: MPC autotune, bed PID autotune, `M503` output saved. Measured: probe X -31.2, Y -42.1, Z offset -2.82. Still borrowed or unverified: bed limits from the reference post; Z offset still needs the first-layer confirmation.
 
+## Status (2026-11-06)
+Acceleration raised from 500 to 3000 max (X/Y) and 2000 print / 3000 travel (`M201 X3000 Y3000`, `M204 P2000 T3000`), saved with `M500`. Input shaping is still the same on X and Y (40 Hz, damping 0.15): untuned. Bed mesh 9x9 (Smart Fill-in not needed: all 81 points are probed). Settings restore file: `gcode/restore-settings-20261106.gcode`, updated for the new acceleration. The firmware now also has an SPI mode for the SD-WIFI board (`ender3v2-sprite-spi` preset; power-loss recovery off in that build).
+
 ## Open items
 1. Z offset: -2.82 measured; confirm on the first-layer print (live adjust 0.02 to 0.05 mm), then `M500`.
 2. ~~Verify E steps~~ done 2026-10-30: measured by the 120 mm / 100 mm test, 424.9 confirmed, no change.
@@ -162,3 +165,4 @@ Flashed and running. Done: MPC autotune, bed PID autotune, `M503` output saved. 
 9. `M503` saved once; save a new copy after the remaining tuning.
 10. CI follow-ups: GitHub Releases for builds, `BUILDS.md`, cleanup action, clean/experimental tiers.
 11. Firmware park point: patched in `ci/build.py` (70a9724+). Run "Build custom firmware", flash the new .bin, then confirm with a pause test at a safe moment (hand on the power switch). Until flashed, do not pause and treat the runout sensor as unsafe.
+12. Input shaping: ringing tower per axis (X and Y differ on a bed-slinger), set `M593 X F.. D..` / `M593 Y F.. D..`, `M500`, then judge the new 2000-3000 acceleration by print quality.
