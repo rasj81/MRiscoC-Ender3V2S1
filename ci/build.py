@@ -54,6 +54,25 @@ def patch_park_point(text, adv_text):
     return text[:m.start()] + new + text[m.end():], point
 
 
+def patch_spi_mode(conf_h):
+    """SPI: read the onboard SD slot in SPI mode (Marlin option SD_SPI_MODE, implemented in this fork).
+    The generator's Configuration.h doesn't know it, so switch it on right after SDSUPPORT."""
+    if active_define(conf_h, "SD_SPI_MODE"):
+        return conf_h
+    m = re.search(r"(?m)^[ \t]*#define[ \t]+SDSUPPORT\b[^\n]*$", conf_h)
+    if not m:
+        sys.exit("SPI: #define SDSUPPORT not found in the generated Configuration.h")
+    return conf_h[:m.end()] + "\n#define SD_SPI_MODE  // CI: SPI option, onboard SD slot read in SPI mode" + conf_h[m.end():]
+
+
+def check_spi_source(src):
+    """The SPI option only exists in this fork's firmware source; stop if the checkout doesn't have it."""
+    pins = src / "pins" / "stm32f1" / "pins_CREALITY_V4.h"
+    if "SD_SPI_MODE" not in pins.read_text():
+        sys.exit("SPI: this firmware source has no SD_SPI_MODE support. Use firmware_source = this-fork "
+                 "and a firmware_ref that contains it (e.g. sd-spi-mode)")
+
+
 def patch_source(path, old, new, what):
     """Exact-text source patch; fails the build if the upstream code changed under us."""
     text = path.read_text()
@@ -134,7 +153,8 @@ def main():
 
     features = [f for f in args.features.split(",") if f]
     dd = "DD" in features
-    features = [f for f in features if f != "DD"]  # CI-side option: the generator does not know it
+    spi = "SPI" in features
+    features = [f for f in features if f not in ("DD", "SPI")]  # CI-side options: the generator does not know them
     mname = args.machine_name or args.name
     if len(mname) > 32:
         sys.exit(f"machine name {mname!r} is {len(mname)} chars; Marlin allows 32 at most")
@@ -153,6 +173,9 @@ def main():
     conf_h = (out / "Configuration.h").read_text()
     conf_adv = (out / "Configuration_adv.h").read_text()
     conf_h, park = patch_park_point(conf_h, conf_adv)
+    if spi:
+        check_spi_source(target / "Marlin" / "src")
+        conf_h = patch_spi_mode(conf_h)
     pause_retract = fwr = None
     if dd:
         conf_adv, pause_retract = patch_pause_retract(conf_adv)
@@ -161,6 +184,8 @@ def main():
     (out / "Configuration_adv.h").write_text(conf_adv)
     cfg = conf_h + conf_adv
     missing = []
+    if spi and not active_define(cfg, "SD_SPI_MODE"):
+        missing.append("SPI: SD_SPI_MODE not active")
     for code in features:
         if code in EXPECT:
             define, value = EXPECT[code]
@@ -178,7 +203,7 @@ def main():
     if dd and active_define(cfg, "FWRETRACT") or dd and active_define(conf_adv, "FWRETRACT"):
         patch_retract_cap(repo / "Marlin" / "src")
     m = re.search(r"(?m)^[ \t]*#define[ \t]+TEMP_SENSOR_0[ \t]+(\S+)", cfg)
-    print(f"OK {mname} (file name {args.name}): options={features} DD={dd} TEMP_SENSOR_0={m.group(1) if m else '?'} NOZZLE_PARK_POINT={park or 'unchanged'} PAUSE_PARK_RETRACT_LENGTH={pause_retract or 'unchanged'} FWRETRACT=[{fwr or 'off'}]")
+    print(f"OK {mname} (file name {args.name}): options={features} DD={dd} SPI={spi} TEMP_SENSOR_0={m.group(1) if m else '?'} NOZZLE_PARK_POINT={park or 'unchanged'} PAUSE_PARK_RETRACT_LENGTH={pause_retract or 'unchanged'} FWRETRACT=[{fwr or 'off'}]")
 
 
 if __name__ == "__main__":

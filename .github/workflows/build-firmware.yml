@@ -110,6 +110,10 @@ on:
         description: "Custom only: Speaker"
         type: boolean
         default: false
+      spi:
+        description: "Any preset or custom: SPI - read the onboard SD slot in SPI mode (for the FYSETC SD-WIFI). Needs firmware_source = this-fork and a firmware_ref that has SD_SPI_MODE (sd-spi-mode)."
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -202,6 +206,17 @@ jobs:
             echo "::notice::last log lines: $(tail -n 6 ../build.log | tr '\n' '|' | cut -c1-400)"
           fi
           exit $rc
+      - name: Check the SPI option really replaced SDIO
+        if: contains(matrix.features, 'SPI')
+        run: |
+          nm="$(ls ~/.platformio/packages/toolchain-gccarmnoneeabi/bin/arm-none-eabi-nm)"
+          set -- fw/.pio/build/${{ matrix.env }}/*.elf
+          [ "$#" -eq 1 ] || { echo "expected exactly one .elf, found $#: $*"; exit 1; }
+          if "$nm" "$1" | grep -q SDIO_Init; then
+            echo "::error::SPI was requested but the SDIO driver is still in the firmware"; exit 1
+          fi
+          "$nm" "$1" | grep -q delaySPI_125 || { echo "::error::SPI was requested but the soft SPI code is missing"; exit 1; }
+          echo "SPI option verified: no SDIO driver, soft SPI present"
       - name: Name the firmware like the Configurator, plus branch and date
         id: pkg
         env:

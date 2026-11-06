@@ -25,7 +25,7 @@ FEATURES = {
     "homeoffs": "HomeOffs", "is": "IS", "la": "LA",
     "locksteppers": "LockSteppers", "mpc": "MPC", "np": "NP",
     "repeat_depth": "Repeat&Depth", "sdreadonly": "SDReadOnly",
-    "speaker": "Speaker",
+    "speaker": "Speaker", "spi": "SPI",
 }
 
 
@@ -78,9 +78,9 @@ def build_item(codes, env, label, source):
     return {"display": display, "name": name, "machine_name": machine_name(name), "label": label, "env": env, "features": modes, **source}
 
 
-def from_preset(name, source):
+def from_preset(name, source, extra=()):
     data = json.loads((PRESET_DIR / f"{name}.json").read_text())
-    return build_item(data["features"], data["env"], data["label"], source)
+    return build_item(list(data["features"]) + [c for c in extra if c not in data["features"]], data["env"], data["label"], source)
 
 
 def from_form(inputs, source):
@@ -119,12 +119,18 @@ def main():
         "date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d"),
     }
     source["firmware_ref"] = resolve_ref(source["source_repo"], inputs.get("firmware_ref", "").strip())
+    # SPI = read the onboard SD slot in SPI mode (Marlin SD_SPI_MODE). The code for it lives in this fork's
+    # source, so building it from upstream would silently produce a normal SDIO firmware: refuse that.
+    spi = inputs.get("spi") == "true"
+    if spi and not use_fork:
+        sys.exit("SPI needs firmware_source = this-fork (and a firmware_ref that has SD_SPI_MODE, e.g. sd-spi-mode)")
+    extra = ["SPI"] if spi else []
     if preset == "ALL":
-        include = [from_preset(p.stem, source) for p in sorted(PRESET_DIR.glob("*.json"))]
+        include = [from_preset(p.stem, source, extra) for p in sorted(PRESET_DIR.glob("*.json"))]
     elif preset == "custom":
         include = [from_form(inputs, source)]
     else:
-        include = [from_preset(preset, source)]
+        include = [from_preset(preset, source, extra)]
     matrix = json.dumps({"include": include})
     print(matrix)
     out = os.environ.get("GITHUB_OUTPUT")
