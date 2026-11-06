@@ -65,17 +65,6 @@ def patch_spi_mode(conf_h):
     return conf_h[:m.end()] + "\n#define SD_SPI_MODE  // CI: SPI option, onboard SD slot read in SPI mode" + conf_h[m.end():]
 
 
-def patch_spi_ignore_startup(adv_text):
-    """SPI: don't mount the card while Marlin starts. With the SD-WIFI board in an SD-to-microSD adapter the
-    printer did not finish booting in SPI mode; mounting later (menu, or re-inserting the card) works."""
-    if active_define(adv_text, "SD_IGNORE_AT_STARTUP"):
-        return adv_text
-    pat = re.compile(r"(?m)^([ \t]*)//[ \t]*#define[ \t]+SD_IGNORE_AT_STARTUP\b")
-    if not pat.search(adv_text):
-        sys.exit("SPI: SD_IGNORE_AT_STARTUP not found in the generated Configuration_adv.h")
-    return pat.sub(lambda m: m.group(1) + "#define SD_IGNORE_AT_STARTUP", adv_text, count=1)
-
-
 def check_spi_source(src):
     """The SPI option only exists in this fork's firmware source; stop if the checkout doesn't have it."""
     pins = src / "pins" / "stm32f1" / "pins_CREALITY_V4.h"
@@ -187,7 +176,6 @@ def main():
     if spi:
         check_spi_source(target / "Marlin" / "src")
         conf_h = patch_spi_mode(conf_h)
-        conf_adv = patch_spi_ignore_startup(conf_adv)
     pause_retract = fwr = None
     if dd:
         conf_adv, pause_retract = patch_pause_retract(conf_adv)
@@ -198,8 +186,6 @@ def main():
     missing = []
     if spi and not active_define(cfg, "SD_SPI_MODE"):
         missing.append("SPI: SD_SPI_MODE not active")
-    if spi and not active_define(cfg, "SD_IGNORE_AT_STARTUP"):
-        missing.append("SPI: SD_IGNORE_AT_STARTUP not active")
     for code in features:
         if code in EXPECT:
             define, value = EXPECT[code]
