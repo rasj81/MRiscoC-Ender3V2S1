@@ -38,9 +38,80 @@
 #if ENABLED(SOFTWARE_SPI)
 
   // ------------------------
-  // Software SPI
+  // Software SPI (bit-banged on the pins given by SD_SCK_PIN, SD_MISO_PIN, SD_MOSI_PIN and SD_SS_PIN)
+  // Used to read the Creality V4 onboard slot in SPI mode, see SD_SPI_MODE.
   // ------------------------
-  #error "Software SPI not supported for STM32F1. Use hardware SPI."
+
+  #include "../shared/Delay.h"
+
+  void spiBegin() {
+    #if PIN_EXISTS(SD_SS)
+      OUT_WRITE(SD_SS_PIN, HIGH);
+    #endif
+    OUT_WRITE(SD_SCK_PIN, HIGH);
+    SET_INPUT(SD_MISO_PIN);
+    OUT_WRITE(SD_MOSI_PIN, HIGH);
+  }
+
+  // Compile-time delays so the clock rates below are actually reached.
+  // At 72MHz one clock is 14ns and calling a function costs about 3 clocks.
+  #define CALLING_COST_NS  (3U * 1000000000U) / (F_CPU)
+  static void (*delaySPIFunc)();
+  static void delaySPI_125()  { DELAY_NS(125 - CALLING_COST_NS); }
+  static void delaySPI_250()  { DELAY_NS(250 - CALLING_COST_NS); }
+  static void delaySPI_500()  { DELAY_NS(500 - CALLING_COST_NS); }
+  static void delaySPI_1000() { DELAY_NS(1000 - CALLING_COST_NS); }
+  static void delaySPI_2000() { DELAY_NS(2000 - CALLING_COST_NS); }
+  static void delaySPI_4000() { DELAY_NS(4000 - CALLING_COST_NS); }
+
+  void spiInit(uint8_t spiRate) {
+    switch (spiRate) {
+      case SPI_FULL_SPEED:    delaySPIFunc =  &delaySPI_125; break;  // desired: max   actual: ~1 MHz
+      case SPI_HALF_SPEED:    delaySPIFunc =  &delaySPI_125; break;
+      case SPI_QUARTER_SPEED: delaySPIFunc =  &delaySPI_250; break;
+      case SPI_EIGHTH_SPEED:  delaySPIFunc =  &delaySPI_500; break;
+      case SPI_SPEED_5:       delaySPIFunc = &delaySPI_1000; break;
+      case SPI_SPEED_6:       delaySPIFunc = &delaySPI_2000; break;
+      default:                delaySPIFunc = &delaySPI_4000; break;  // ~125 kHz, used while the card starts up
+    }
+  }
+
+  // Clock idles high; the card samples on the rising edge (what the SD SPI mode accepts)
+  static uint8_t spiTransfer(uint8_t b) {
+    for (uint8_t bits = 8; bits--;) {
+      WRITE(SD_SCK_PIN, LOW);
+      WRITE(SD_MOSI_PIN, b & 0x80);
+      delaySPIFunc();
+      WRITE(SD_SCK_PIN, HIGH);
+      delaySPIFunc();
+      b <<= 1;
+      b |= (READ(SD_MISO_PIN) != 0);
+    }
+    DELAY_NS(125);
+    return b;
+  }
+
+  uint8_t spiRec() {
+    hal.isr_off();                      // no interrupts during a byte
+    const uint8_t data = spiTransfer(0xFF);
+    hal.isr_on();
+    return data;
+  }
+
+  void spiRead(uint8_t *buf, uint16_t nbyte) {
+    for (uint16_t i = 0; i < nbyte; i++) buf[i] = spiRec();
+  }
+
+  void spiSend(uint8_t b) {
+    hal.isr_off();
+    spiTransfer(b);
+    hal.isr_on();
+  }
+
+  void spiSendBlock(uint8_t token, const uint8_t *buf) {
+    spiSend(token);
+    for (uint16_t i = 0; i < 512; i++) spiSend(buf[i]);
+  }
 
 #else
 

@@ -2768,6 +2768,19 @@
   //#define SD_CHECK_AND_RETRY
 #endif
 
+/**
+ * SD CARD: SPI MODE ON THE ONBOARD SLOT (Creality V4 boards)
+ *
+ * The onboard slot is normally read in SDIO mode. A card that is shared with an SPI-only
+ * device (e.g. the FYSETC SD-WIFI, which talks to the card in SPI mode) can be left in SPI
+ * mode by that device, and then the printer can't read it again until the card is power-cycled.
+ * Enable this to read the card in SPI mode too, bit-banged on the SDIO pins
+ * (CLK PC12, CMD/MOSI PD2, DAT0/MISO PC8, DAT3/CS PC11), so both talk the same way.
+ * It is slower than SDIO (roughly 1 MHz clock) and has not been tested on every card.
+ * Leave it disabled for the stock SDIO behavior.
+ */
+//#define SD_SPI_MODE
+
 // @section interface
 
 /**
