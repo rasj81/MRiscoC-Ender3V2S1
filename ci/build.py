@@ -141,9 +141,9 @@ def patch_pause_retract(adv_text):
 
 FWRETRACT_DEFAULTS = {  # DD: direct-drive firmware retraction defaults (generator ships Bowden values: 5 mm, 40 mm/s, 0.2 mm raise)
     "RETRACT_LENGTH": "0.8",
-    "RETRACT_FEEDRATE": "35",
+    "RETRACT_FEEDRATE": "40",
     "RETRACT_ZRAISE": "0",
-    "RETRACT_RECOVER_FEEDRATE": "35",
+    "RETRACT_RECOVER_FEEDRATE": "40",
 }
 
 

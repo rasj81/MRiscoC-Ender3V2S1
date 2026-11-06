@@ -1,0 +1,78 @@
+M503
+SENDING:M503
+echo:; Linear Units:
+echo:  G21 ; (mm)
+echo:; Auto Temp Control:
+echo:  M104 S0 B250 F0.00
+echo:; Temperature Units:
+echo:  M149 C ; Units in Celsius
+echo:; Filament settings (Disabled):
+echo:  M200 S0 D1.75
+echo:; Steps per unit:
+echo:  M92 X80.00 Y80.00 Z400.00 E424.90
+echo:; Max feedrates (units/s):
+echo:  M203 X500.00 Y500.00 Z10.00 E60.00
+echo:; Max Acceleration (units/s2):
+echo:  M201 X3000.00 Y3000.00 Z500.00 E5000.00
+echo:; Acceleration (units/s2) (P<print-accel> R<retract-accel> T<travel-accel>):
+echo:  M204 P500.00 R1000.00 T500.00
+echo:; Advanced (B<min_segment_time_us> S<min_feedrate> T<min_travel_feedrate> J<junc_dev>):
+echo:  M205 B20000.00 S0.00 T0.00 J0.01
+echo:; Unified Bed Leveling:
+echo:  M420 S0 Z10.00 ; Leveling OFF
+Unified Bed Leveling System v1.01 inactive
+echo:Active Mesh Slot 0
+echo:EEPROM can hold 7 meshes.
+echo:; BLTouch HS mode:
+echo:  M401 S1 ; ON
+echo:; Material heatup parameters:
+echo:  M145 S0 H195.00 B60.00 F128
+echo:  M145 S1 H240.00 B90.00 F128
+echo:  M145 S2 H230.00 B80.00 F128
+echo:  M145 S3 H190.00 B50.00 F128
+echo:; Bed PID:
+echo:  M304 P223.67 I39.94 D835.04
+echo:; Display Sleep:
+echo:  M255 S5 ; (minutes)
+echo:; LCD Brightness:
+echo:  M256 B127
+echo:; Retract (S<length> F<feedrate> Z<lift>):
+echo:  M207 S0.70 W13.00 F2400.00 Z0.00
+echo:; Recover (S<length> F<feedrate>):
+echo:  M208 S0.00 W0.00 F2400.00 R480.00
+echo:; Homing Feedrate:
+echo:  M210 X3000.00 Y3000.00 Z600.00
+echo:; Z-Probe Offset:
+echo:  M851 X-31.20 Y-42.10 Z-2.85 ; (mm)
+echo:; Input Shaping:
+echo:  M593 X F40.00 D0.15
+echo:  M593 Y F40.00 D0.15
+echo:; Hotend Idle Timeout:
+echo:  M86 B0 E0 S600 T170
+echo:; Linear Advance:
+echo:  M900 K0.04
+echo:; Filament load/unload:
+echo:  M603 L0.00 U100.00 ; (mm)
+echo:; Filament runout sensor:
+echo:  M412 S1 D40.00 ; Sensor ON
+echo:; Model predictive control:
+echo:  M306 E0 P40.00 C9.25 R0.2757 A0.0577 F0.0636 H0.0056
+echo:; Physical minimums:
+echo:  C100 X0 Y0
+echo:; Physical maximums:
+echo:  C101 X220 Y220 Z230
+echo:; Bed size:
+echo:  C102 X220 Y220
+echo:; Mesh inset and leveling settings:
+echo:  C29 L25 R188 F25 B177 X9 Y9 T50 V1 ; 9x9 T=50 C
+echo:; Max Extruder temperature:
+echo:  C104 T300
+echo:; Park Head:
+echo:  C125 X200 Y200 Z20
+echo:; Filament runout sensor:
+echo:  C412 M2 ; Active mode: Motion
+echo:; Invert Extruder:
+echo:  C562 E0 ; No inverted
+echo:; Probe Z Fix, Speed and Multiple Probing:
+echo:  C851 F0.00000 S480 M0
+ok P15 B15

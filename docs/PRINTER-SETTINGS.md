@@ -22,8 +22,8 @@ Flash: copy only the `.bin` to the SD root (FAT32), use a new file name each tim
 | Z steps/mm | 400 | unchanged by the splitter and belt |
 | E steps/mm | **93 (stock Bowden)** | wrong for the Sprite Pro. 424.9, measured and confirmed 2026-10-30 (120 mm mark, 100 mm extrude, no change needed). |
 | Max feedrate X/Y/Z/E | 500, 500, 10, 45 mm/s | on the printer (`M503` 2026-11-06): 500, 500, 10, 60 |
-| Max acceleration X/Y/Z/E | 500, 500, 100, 1000 | on the printer since 2026-11-06: **3000, 3000, 500, 5000** (X/Y were 500 until then; raised after the speed review, `M201`) |
-| Print acceleration | 500 | on the printer since 2026-11-06: **2000** print, 3000 travel, 1000 retract (`M204 P2000 R1000 T3000`); was 500 / 1000 / 500 |
+| Max acceleration X/Y/Z/E | 500, 500, 100, 1000 | on the printer (`M503` 2026-11-06 16:38): **3000, 3000, 500, 5000** (X/Y were 500 before; `M201`) |
+| Print acceleration | 500 | on the printer (`M503` 2026-11-06 16:38): still **500** print, 1000 retract, 500 travel (`M204 P500 R1000 T500`). Raising `M201` alone changes nothing: print and travel acceleration (`M204 P`, `T`) are the effective limits, so raise those too (planned test: `M204 P2000 T3000`) |
 | Homing feedrate X/Y/Z | 50, 50, 10 mm/s | |
 | Probe travel (XY) | 12,000 mm/min | |
 | Probe Z fast / slow | 960 / 480 mm/min | other user used Z feed rate 480 [ref] |
@@ -71,7 +71,7 @@ Not verified on this firmware: that `G29 J` runs and reaches its points inside t
 
 ## Orca G-code files (reviewed 2026-10-28; all untested on the printer)
 Retraction ceiling (owner rule, 2026-10-28): keep every retract at or below 2 mm on this direct drive (slicer 0.8 mm start, end-of-print 1.5 mm). `tools/check_retracts.py` checks an exported .gcode (`python3 tools/check_retracts.py print.gcode`; exits 1 if any retract, including a split wipe retract or G10 with its M207 length, is deeper than 2 mm; `--max 1.5` changes the limit; also usable as an Orca post-processing script). Firmware cannot cap slicer E moves (`EXTRUDE_MAXLENGTH` limits any single E move, so 2 would also block the 10 mm purge). The start G-code sets `M207 S0.8` every print.
-**DD option ("DD - Direct drive extruder")**: a CI-side build option (workflow checkbox "dd"; the `ender3v2-sprite` preset has it, `ender3v2-bowden` does not; the code appears in the .bin name). With DD: pause/M600 initial retract 1.0 mm (`PAUSE_PARK_RETRACT_LENGTH`), firmware retraction defaults 0.8 mm / 35 mm/s / 0 Z raise / 35 mm/s recover, and the firmware retract length (M207 S) is capped at 2 mm by a source patch. Without DD the generator's values are untouched (Bowden: 5 mm retract, 2 mm pause). Takes effect after a build and flash.
+**DD option ("DD - Direct drive extruder")**: a CI-side build option (workflow checkbox "dd"; the `ender3v2-sprite` preset has it, `ender3v2-bowden` does not; the code appears in the .bin name). With DD: pause/M600 initial retract 1.0 mm (`PAUSE_PARK_RETRACT_LENGTH`), firmware retraction defaults 0.8 mm / 40 mm/s / 0 Z raise / 40 mm/s recover, and the firmware retract length (M207 S) is capped at 2 mm by a source patch. Without DD the generator's values are untouched (Bowden: 5 mm retract, 2 mm pause). Takes effect after a build and flash.
 **Park point (always on, not DD)**: `ci/build.py` sets `NOZZLE_PARK_POINT` to 30 mm inside the smaller of bed size and max position (200,200 here) and patches `nozzle.cpp` so the XY park move is clamped to the printer's runtime software endstops. Untested on hardware; the clamp only works while soft endstops are enabled (default).
 - `gcode/start.gcode`: Orca's original start (left-edge prime at X2, Z0.28, two E10 passes) plus warm-bed probing, `G29 L0` mesh reload, `G29 J` tilt, `M420 S1 Z10`. Bed exclude area for the prime strip: `0x0,10x0,10x145,0x145`.
 - `gcode/end.gcode`: Orca's original end (lift above the print, present it at X5 / 80% of bed Y, raise the head, heaters and fan off, `M84 X Y E` so Z stays locked) plus a 1.5 mm retract and nozzle-off first. Needs Orca printable height 230 and firmware Z max 230.
@@ -90,7 +90,7 @@ Orca Slicer / Bambu Studio terms. **Every value is a starting point from general
 | Walls | Arachne generator | thin features and small text print instead of being skipped |
 | Seam | scarf seam, contour | hides the seam on round parts |
 | Infill | Gyroid (strength), Adaptive Cubic (save filament), Lightning (display only); avoid Grid | see the printpal and Creality notes in the 3d-printing skill |
-| Acceleration | Match the firmware: 2000 print, 3000 travel (since 2026-11-06; was 500) | Input shaping is still the untuned 40 Hz / 0.15 on both axes: tune each axis with a ringing tower, then re-check quality at this acceleration |
+| Acceleration | Match the firmware (`M204`): 500 print / 500 travel as of 2026-11-06; raise with `M204` only after Input Shaping is tuned | Input shaping is still the untuned 40 Hz / 0.15 on both axes: tune each axis with a ringing tower first |
 | Travel speed | 150 mm/s | |
 | Bed mesh | UBL, fade height 10 | |
 | Printer end G-code | `M84 X Y E` | keeps Z motors locked so the gantry does not drop (dual Z) |
@@ -151,7 +151,7 @@ Temperature tower, flow rate, Linear Advance K, retraction, then (once only) Inp
 Flashed and running. Done: MPC autotune, bed PID autotune, `M503` output saved. Measured: probe X -31.2, Y -42.1, Z offset -2.82. Still borrowed or unverified: bed limits from the reference post; Z offset still needs the first-layer confirmation.
 
 ## Status (2026-11-06)
-Acceleration raised from 500 to 3000 max (X/Y) and 2000 print / 3000 travel (`M201 X3000 Y3000`, `M204 P2000 T3000`), saved with `M500`. Input shaping is still the same on X and Y (40 Hz, damping 0.15): untuned. Bed mesh 9x9 (Smart Fill-in not needed: all 81 points are probed). Settings restore file: `gcode/restore-settings-20261106.gcode`, updated for the new acceleration. The firmware now also has an SPI mode for the SD-WIFI board (`ender3v2-sprite-spi` preset; power-loss recovery off in that build).
+Running the SPI firmware (power-loss recovery off). Max acceleration X/Y raised from 500 to 3000 (`M201`); print and travel acceleration (`M204`) are still 500, so prints are not faster yet. Retract and recover speed 40 mm/s (`M207`/`M208 F2400`), runout sensor on with distance 40 (`M412 S1 D40`), bed PID and MPC retuned (see the capture). Input shaping is still the same on X and Y (40 Hz, damping 0.15): untuned. Bed mesh 9x9 (Smart Fill-in not needed: all 81 points are probed). Settings restore files: `gcode/restore-settings-20261106-1638.gcode` (current, from the capture in `docs/m503/`); `gcode/restore-settings-20261106.gcode` is the pre-SPI firmware. The firmware now also has an SPI mode for the SD-WIFI board (`ender3v2-sprite-spi` preset; power-loss recovery off in that build).
 
 ## Open items
 1. Z offset: -2.82 measured; confirm on the first-layer print (live adjust 0.02 to 0.05 mm), then `M500`.

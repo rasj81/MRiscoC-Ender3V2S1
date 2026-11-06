@@ -1,7 +1,6 @@
 ; Restore settings for the Ender 3 V2 (MRiscoC ProUI) after flashing a new build.
 ; Source: M503 output saved 2026-11-06 from the firmware that was running before the SPI-mode build.
 ; Usage: put this file on the printer's SD card, print it from the menu, then check with M503.
-; Acceleration raised 2026-11-06 (M201 X/Y 3000, M204 P2000 T3000); everything else is as captured.
 ; Not included: the bed mesh (re-run leveling) and the C-lines M503 prints for settings that can't be set by G-code.
 
 ; Linear Units:
@@ -17,9 +16,9 @@ M92 X80.00 Y80.00 Z400.00 E424.90
 ; Max feedrates (units/s):
 M203 X500.00 Y500.00 Z10.00 E60.00
 ; Max Acceleration (units/s2):
-M201 X3000.00 Y3000.00 Z500.00 E5000.00
+M201 X500.00 Y500.00 Z500.00 E5000.00
 ; Acceleration (units/s2) (P<print-accel> R<retract-accel> T<travel-accel>):
-M204 P2000.00 R1000.00 T3000.00
+M204 P500.00 R1000.00 T500.00
 ; Advanced (B<min_segment_time_us> S<min_feedrate> T<min_travel_feedrate> J<junc_dev>):
 M205 B20000.00 S0.00 T0.00 J0.01
 ; Unified Bed Leveling:
