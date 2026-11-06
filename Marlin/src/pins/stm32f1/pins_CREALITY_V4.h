@@ -170,7 +170,16 @@
 //
 #define SD_DETECT_PIN                       PC7
 #define SDCARD_CONNECTION ONBOARD
-#define ONBOARD_SDIO
+#if ENABLED(SD_SPI_MODE)
+  // Software SPI on the SDIO pins, so the card stays in SPI mode like the SD-WIFI leaves it
+  #define SOFTWARE_SPI
+  #define SD_SCK_PIN                        PC12  // SDIO CLK
+  #define SD_MISO_PIN                       PC8   // SDIO DAT0
+  #define SD_MOSI_PIN                       PD2   // SDIO CMD
+  #define SD_SS_PIN                         PC11  // SDIO DAT3
+#else
+  #define ONBOARD_SDIO
+#endif
 #define NO_SD_HOST_DRIVE                          // This board's SD is only seen by the printer
 
 /**    Debug port
