@@ -2,13 +2,10 @@ name: Build custom firmware
 
 # Run from the Actions tab: pick a saved preset, or choose "custom" and set the
 # options below (same choices as the Special_Configurations Configurator).
-# "ALL" builds every file in presets/. To add a preset, add presets/<name>.json
-# and add <name> to the preset list below.
-#
-# Also runs on the 1st of every month (all presets, latest upstream firmware).
+# Each run builds one preset (or one custom build). To add a preset, add
+# presets/<name>.json and add <name> to the preset list below. There is no
+# scheduled run and no build-everything option.
 on:
-  schedule:
-    - cron: "0 6 1 * *"
   workflow_dispatch:
     inputs:
       firmware_ref:
@@ -21,10 +18,10 @@ on:
         default: upstream-latest
         options: [upstream-latest, this-fork]
       preset:
-        description: "Saved preset (custom = use the options below, ALL = every preset)"
+        description: "Saved preset (custom = use the options below)"
         type: choice
         default: ender3v2-sprite
-        options: [custom, ALL, ender3v2-sprite, ender3v2-sprite-spi, ender3v2-bowden]
+        options: [custom, ender3v2-sprite, ender3v2-sprite-spi, ender3v2-bowden]
       env:
         description: "Custom only: PlatformIO environment (RET6 board = STM32F103RE_creality)"
         type: string

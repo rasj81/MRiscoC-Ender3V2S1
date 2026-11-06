@@ -110,7 +110,7 @@ def main():
     raw = json.loads(os.environ.get("INPUTS_JSON") or "{}") or {}
     inputs = {k: (str(v).lower() if isinstance(v, bool) else str(v)) for k, v in raw.items()}
     # Scheduled/no-input runs build every preset from upstream.
-    preset = inputs.get("preset", "ALL")
+    preset = inputs.get("preset", "ender3v2-sprite")
     repo = os.environ.get("GITHUB_REPOSITORY", "rasj81/MRiscoC-Ender3V2S1")
     date = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
 
@@ -122,7 +122,7 @@ def main():
     use_fork = inputs.get("firmware_source") == "this-fork"
     # SPI = read the onboard SD slot in SPI mode (Marlin SD_SPI_MODE). The code for it lives in this fork's
     # source, so an SPI build always comes from the fork (building it from upstream would silently produce a
-    # normal SDIO firmware). Scheduled / ALL runs from upstream skip the SPI presets.
+    # normal SDIO firmware).
     spi = inputs.get("spi") == "true"
     extra = ["SPI"] if spi else []
 
@@ -131,12 +131,7 @@ def main():
         needs_fork = spi or "SPI" in data["features"]
         return from_preset(name, make_source(use_fork or needs_fork), extra)
 
-    if preset == "ALL":
-        names = [p.stem for p in sorted(PRESET_DIR.glob("*.json"))]
-        if not use_fork:
-            names = [n for n in names if "SPI" not in json.loads((PRESET_DIR / f"{n}.json").read_text())["features"]]
-        include = [preset_item(n) for n in names]
-    elif preset == "custom":
+    if preset == "custom":
         include = [from_form(inputs, make_source(use_fork or spi))]
     else:
         include = [preset_item(preset)]
