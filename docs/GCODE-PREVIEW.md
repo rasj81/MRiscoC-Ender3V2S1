@@ -15,10 +15,10 @@ How to get a thumbnail on the printer's screen (Ender 3 V2 with Sprite Pro, SPI 
 ## Orca setup
 1. Switch to **Expert** mode (top right) so the settings are visible.
 2. **Printer settings > Basic information:** set **G-code flavor** to **Marlin 2**. The script only acts on this flavor.
-3. **Printer settings > General > G-code thumbnails:** enter `230x180` (use `180x180` for a TJC screen), format **JPG**.
+3. **Printer settings > General > G-code thumbnails:** enter `200x200`, format **JPG**. This is the size in use on the Ender 3 V2 Sprite Pro SPI build. The mriscoc wiki recommends `230x180` (`180x180` for a TJC screen), but `230x180` and `80x80` both showed a blank preview on this printer.
 4. Put the script somewhere permanent, for example `~/bin/orca-marlin-thumb.sh`, and run `chmod +x` on it. Then in the **Process** profile used for the Ender, open **Others > Post-processing scripts** (turn on Advanced) and enter the full script path (for example `/Users/<you>/bin/orca-marlin-thumb.sh`). Attach it only to the Ender process profile; Orca stores the setting per profile.
 5. Slice, export the G-code, and open it in a text editor:
-   - near the top, the thumbnail block should read `; thumbnail_jpg begin 230x180 <bytes>` (lowercase) and the byte count should be under 20,000;
+   - near the top, the thumbnail block should read `; thumbnail_jpg begin 200x200 <bytes>` (lowercase) and the byte count should be under 20,000;
    - near the bottom, the settings block should contain the line `; gcode_flavor = marlin2`.
    If the tag has different text, or the flavor line is different, edit the `grep` and `sed` patterns in the script to match.
 
@@ -33,9 +33,9 @@ How to get a thumbnail on the printer's screen (Ender 3 V2 with Sprite Pro, SPI 
 |---|---|
 | "No thumbnail" on the printer | Tag still `thumbnail_JPG`; script not attached to this profile; script not executable; flavor not Marlin 2 |
 | Script does not run | Path wrong or has spaces unquoted; `chmod +x` missing; Orca needs the full path |
-| Thumbnail missing only on detailed models | JPEG over 20 KB; try a smaller size such as `180x180` |
+| Thumbnail missing only on detailed models | JPEG over 20 KB; try a smaller size such as `180x180`; blank previews at both `230x180` and `80x80` were seen on one printer, so test sizes one at a time |
 | QR-code-like glitch screen | Display asset font mismatch; see upstream wiki "How to update the display" |
-| Works in Orca preview but not on the printer | Wrong size for the screen type (230x180 vs 180x180) |
+| Works in Orca preview but not on the printer | Wrong size for the screen type (`200x200` works on the Sprite Pro SPI build; `230x180` vs `180x180` depends on the screen) |
 
 ## If the lowercase edit does not work
 Use the upstream script instead: install Python 3 and Pillow (`pip3 install Pillow`), save `professionalfirmware.py`, and put `/path/to/python3 /path/to/professionalfirmware.py;` in the same **Post-processing scripts** box.
