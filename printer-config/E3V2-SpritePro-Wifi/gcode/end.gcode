@@ -16,3 +16,11 @@ G1 X5 Y{print_bed_max[1]*0.8} F{travel_speed*60} ; present print
 M140 S0                              ; turn off heatbed
 M107                                 ; turn off fan
 M84 X Y E                            ; disable X, Y, E only: Z stays locked so the dual-Z gantry does not drop
+
+; End-of-print beep: two short beeps and one long one, after everything is off
+; (SPEAKER is off in the firmware, so only the duration P matters; S/pitch is ignored)
+M300 P200                            ; short beep
+G4 P150                              ; pause
+M300 P200                            ; short beep
+G4 P150                              ; pause
+M300 P600                            ; long beep: print finished
