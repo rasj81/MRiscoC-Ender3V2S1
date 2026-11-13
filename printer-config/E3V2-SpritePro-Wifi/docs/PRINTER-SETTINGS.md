@@ -1,6 +1,6 @@
 # Ender 3 V2 printer settings reference
 
-This file is the standard profile. The planned speed-optimised variant is `docs/profiles/ender-3-v2-project-ferrari.md` (Ender 3 V2 Project Ferrari).
+This file is the standard profile. The planned speed-optimised variant is `printer-config/E3V2-SpritePro-Wifi/docs/profiles/ender-3-v2-project-ferrari.md` (Ender 3 V2 Project Ferrari).
 
 Hardware: Ender 3 V2, 4.2.2 board (STM32F103RET6, 512 kB), DWIN display, Creality Sprite Pro direct drive with its built-in CR Touch mount, dual Z (splitter cable, timing belt sync), smart filament sensor. Fallback: previous Bowden setup.
 
@@ -43,7 +43,7 @@ E-steps (measured): [measure]
 ## Bed and limits (set on the printer screen, then `M500`)
 Reference [ref]: X min 0, Y min -5, X max 215, Y max 220, Z max 235; mesh 7x7, fade height 10, inset 10.
 Mine (measured 2026-10-27/28 in the current configuration): X 0 to 220, Y 0 to 220, Z max 230. The firmware's compiled Z_MAX_POS is 250, so set Z max to 230 on the printer screen and `M500` so the firmware never drives above the real limit. Mesh: 6x6, maximize area (see below), fade height 10.
-Orca printer profile: bed shape 220 x 220 mm, origin 0,0 (front-left), max print height 230 mm, bed exclude area `0x0,10x0,10x145,0x145` (left-edge prime strip of `gcode/start.gcode`; if Orca rejects the point format, draw the rectangle in its editor). Usable area: 220 x 220 minus a 10 x 145 strip.
+Orca printer profile: bed shape 220 x 220 mm, origin 0,0 (front-left), max print height 230 mm, bed exclude area `0x0,10x0,10x145,0x145` (left-edge prime strip of `printer-config/E3V2-SpritePro-Wifi/gcode/start.gcode`; if Orca rejects the point format, draw the rectangle in its editor). Usable area: 220 x 220 minus a 10 x 145 strip.
 
 ## Heater tuning
 - Hotend uses MPC: run the autotune from the menu or `M306 T`, then `M500`. Reference PID values in the source post are not needed.
@@ -66,18 +66,18 @@ Both motors share one driver through a splitter cable, so independent auto-align
 ## Pre-print mesh tilt (decided 2026-10-27)
 The 6x6 mesh stays saved in slot 0 and is not rebuilt per print. Each print reloads it and tilts it to the bed's current level:
 `G28`, then `G29 L0` (reload slot 0; without this the tilt would compound from print to print), `G29 J` (3-point tilt), `M420 S1 Z10`.
-Rebuild the full mesh warm (and `G29 S0` to save) after major changes: nozzle, probe mount, springs, bed surface, or if the first layer drifts. Start and end G-code files: `gcode/start.gcode` and `gcode/end.gcode` (drafts, untested; end G-code keeps Z locked with `M84 X Y E`).
+Rebuild the full mesh warm (and `G29 S0` to save) after major changes: nozzle, probe mount, springs, bed surface, or if the first layer drifts. Start and end G-code files: `printer-config/E3V2-SpritePro-Wifi/gcode/start.gcode` and `printer-config/E3V2-SpritePro-Wifi/gcode/end.gcode` (drafts, untested; end G-code keeps Z locked with `M84 X Y E`).
 Not verified on this firmware: that `G29 J` runs and reaches its points inside the mesh bounds; that the saved mesh loads after any change to the point count.
 
 ## Orca G-code files (reviewed 2026-10-28; all untested on the printer)
-Retraction ceiling (owner rule, 2026-10-28): keep every retract at or below 2 mm on this direct drive (slicer 0.8 mm start, end-of-print 1.5 mm). `tools/check_retracts.py` checks an exported .gcode (`python3 tools/check_retracts.py print.gcode`; exits 1 if any retract, including a split wipe retract or G10 with its M207 length, is deeper than 2 mm; `--max 1.5` changes the limit; also usable as an Orca post-processing script). Firmware cannot cap slicer E moves (`EXTRUDE_MAXLENGTH` limits any single E move, so 2 would also block the 10 mm purge). The start G-code sets `M207 S0.8` every print.
+Retraction ceiling (owner rule, 2026-10-28): keep every retract at or below 2 mm on this direct drive (slicer 0.8 mm start, end-of-print 1.5 mm). `printer-config/tools/check_retracts.py` checks an exported .gcode (`python3 printer-config/tools/check_retracts.py print.gcode`; exits 1 if any retract, including a split wipe retract or G10 with its M207 length, is deeper than 2 mm; `--max 1.5` changes the limit; also usable as an Orca post-processing script). Firmware cannot cap slicer E moves (`EXTRUDE_MAXLENGTH` limits any single E move, so 2 would also block the 10 mm purge). The start G-code sets `M207 S0.8` every print.
 **DD option ("DD - Direct drive extruder")**: a CI-side build option (workflow checkbox "dd"; the `ender3v2-sprite` preset has it, `ender3v2-bowden` does not; the code appears in the .bin name). With DD: pause/M600 initial retract 1.0 mm (`PAUSE_PARK_RETRACT_LENGTH`), firmware retraction defaults 0.8 mm / 40 mm/s / 0 Z raise / 40 mm/s recover, and the firmware retract length (M207 S) is capped at 2 mm by a source patch. Without DD the generator's values are untouched (Bowden: 5 mm retract, 2 mm pause). Takes effect after a build and flash.
 **Park point (always on, not DD)**: `ci/build.py` sets `NOZZLE_PARK_POINT` to 30 mm inside the smaller of bed size and max position (200,200 here) and patches `nozzle.cpp` so the XY park move is clamped to the printer's runtime software endstops. Untested on hardware; the clamp only works while soft endstops are enabled (default).
-- `gcode/start.gcode`: Orca's original start (left-edge prime at X2, Z0.28, two E10 passes) plus warm-bed probing, `G29 L0` mesh reload, `G29 J` tilt, `M420 S1 Z10`. Bed exclude area for the prime strip: `0x0,10x0,10x145,0x145`.
-- `gcode/end.gcode`: Orca's original end (lift above the print, present it at X5 / 80% of bed Y, raise the head, heaters and fan off, `M84 X Y E` so Z stays locked) plus a 1.5 mm retract and nozzle-off first. Needs Orca printable height 230 and firmware Z max 230.
-- `gcode/before-layer-change.gcode`: unchanged. `G92 E0` is redundant with relative extrusion (`M83`) but harmless.
-- `gcode/pause.gcode`: `M25` is correct for this firmware (with PARK_HEAD_ON_PAUSE it calls `M125`, which pauses, retracts and parks). Do not use `M601`: this firmware has no `M601`.
-- `gcode/original/`: Orca's originals, kept verbatim.
+- `printer-config/E3V2-SpritePro-Wifi/gcode/start.gcode`: Orca's original start (left-edge prime at X2, Z0.28, two E10 passes) plus warm-bed probing, `G29 L0` mesh reload, `G29 J` tilt, `M420 S1 Z10`. Bed exclude area for the prime strip: `0x0,10x0,10x145,0x145`.
+- `printer-config/E3V2-SpritePro-Wifi/gcode/end.gcode`: Orca's original end (lift above the print, present it at X5 / 80% of bed Y, raise the head, heaters and fan off, `M84 X Y E` so Z stays locked) plus a 1.5 mm retract and nozzle-off first. Needs Orca printable height 230 and firmware Z max 230.
+- `printer-config/E3V2-SpritePro-Wifi/gcode/before-layer-change.gcode`: unchanged. `G92 E0` is redundant with relative extrusion (`M83`) but harmless.
+- `printer-config/E3V2-SpritePro-Wifi/gcode/pause.gcode`: `M25` is correct for this firmware (with PARK_HEAD_ON_PAUSE it calls `M125`, which pauses, retracts and parks). Do not use `M601`: this firmware has no `M601`.
+- `printer-config/E3V2-SpritePro-Wifi/gcode/original/`: Orca's originals, kept verbatim.
 - Park point (fixed in CI 2026-10-28, NOT yet in the flashed firmware): the generator's default `NOZZLE_PARK_POINT {X_BED_SIZE+10, Y_MAX_POS-10, 20}` = X 240, Y 221 is outside your 220 x 220 travel, and Marlin's park move is not clamped by the soft limits. `ci/build.py` now rewrites it to `{ 200, 200, 20 }` (20 mm in from the bed size, at most 200) and fails the build if it cannot. It takes effect only after you run a new build and flash it. Until then: do not pause, and do not trust the runout sensor.
 
 ## Slicer settings by filament type and nozzle size
@@ -94,7 +94,7 @@ Orca Slicer / Bambu Studio terms. **Every value is a starting point from general
 | Travel speed | 150 mm/s | |
 | Bed mesh | UBL, fade height 10 | |
 | Printer end G-code | `M84 X Y E` | keeps Z motors locked so the gantry does not drop (dual Z) |
-| Printer start G-code | `gcode/start.gcode` in this repo (merged with the original start 2026-10-28, untested): heat bed, `G28`, `G29 L0`, `G29 J`, `M420 S1 Z10`, then the original left-edge prime at X2 (Z0.28, two E10 passes) | [measure] confirm the 3-point tilt reaches its points inside the mesh bounds and that the mesh stays active after `G28` |
+| Printer start G-code | `printer-config/E3V2-SpritePro-Wifi/gcode/start.gcode` in this repo (merged with the original start 2026-10-28, untested): heat bed, `G28`, `G29 L0`, `G29 J`, `M420 S1 Z10`, then the original left-edge prime at X2 (Z0.28, two E10 passes) | [measure] confirm the 3-point tilt reaches its points inside the mesh bounds and that the mesh stays active after `G28` |
 
 ### Filament profiles (0.4 mm nozzle values)
 | | PLA | PLA+ | PLA Pro | PETG+ | ABS | ASA |
@@ -151,7 +151,7 @@ Temperature tower, flow rate, Linear Advance K, retraction, then (once only) Inp
 Flashed and running. Done: MPC autotune, bed PID autotune, `M503` output saved. Measured: probe X -31.2, Y -42.1, Z offset -2.82. Still borrowed or unverified: bed limits from the reference post; Z offset still needs the first-layer confirmation.
 
 ## Status (2026-11-06)
-Running the SPI firmware (power-loss recovery off). Max acceleration X/Y raised from 500 to 3000 (`M201`); print and travel acceleration (`M204`) are still 500, so prints are not faster yet. Retract and recover speed 40 mm/s (`M207`/`M208 F2400`), runout sensor on with distance 40 (`M412 S1 D40`), bed PID and MPC retuned (see the capture). Input shaping is still the same on X and Y (40 Hz, damping 0.15): untuned. Bed mesh 9x9 (Smart Fill-in not needed: all 81 points are probed). Settings restore files: `gcode/restore-settings-20261106-1638.gcode` (current, from the capture in `docs/m503/`); `gcode/restore-settings-20261106.gcode` is the pre-SPI firmware. The firmware now also has an SPI mode for the SD-WIFI board (`ender3v2-sprite-spi` preset; power-loss recovery off in that build).
+Running the SPI firmware (power-loss recovery off). Max acceleration X/Y raised from 500 to 3000 (`M201`); print and travel acceleration (`M204`) are still 500, so prints are not faster yet. Retract and recover speed 40 mm/s (`M207`/`M208 F2400`), runout sensor on with distance 40 (`M412 S1 D40`), bed PID and MPC retuned (see the capture). Input shaping is still the same on X and Y (40 Hz, damping 0.15): untuned. Bed mesh 9x9 (Smart Fill-in not needed: all 81 points are probed). Settings restore files: `printer-config/E3V2-SpritePro-Wifi/gcode/restore-settings-20261106-1638.gcode` (current, from the capture in `printer-config/E3V2-SpritePro-Wifi/docs/m503/`); `printer-config/E3V2-SpritePro-Wifi/gcode/restore-settings-20261106.gcode` is the pre-SPI firmware. The firmware now also has an SPI mode for the SD-WIFI board (`ender3v2-sprite-spi` preset; power-loss recovery off in that build).
 
 ## Open items
 1. Z offset: -2.82 measured; confirm on the first-layer print (live adjust 0.02 to 0.05 mm), then `M500`.
@@ -165,4 +165,4 @@ Running the SPI firmware (power-loss recovery off). Max acceleration X/Y raised 
 9. `M503` saved once; save a new copy after the remaining tuning.
 10. CI follow-ups: GitHub Releases for builds, `BUILDS.md`, cleanup action, clean/experimental tiers.
 11. Firmware park point: patched in `ci/build.py` (70a9724+). Run "Build custom firmware", flash the new .bin, then confirm with a pause test at a safe moment (hand on the power switch). Until flashed, do not pause and treat the runout sensor as unsafe.
-12. Input shaping: ringing tower per axis (X and Y differ on a bed-slinger), set `M593 X F.. D..` / `M593 Y F.. D..`, `M500`, then judge the new 2000-3000 acceleration by print quality. Test files: `gcode/accel-test-2000-3000.gcode` (print 2000, travel 3000) and `gcode/accel-baseline-500.gcode` (back to 500).
+12. Input shaping: ringing tower per axis (X and Y differ on a bed-slinger), set `M593 X F.. D..` / `M593 Y F.. D..`, `M500`, then judge the new 2000-3000 acceleration by print quality. Test files: `printer-config/E3V2-SpritePro-Wifi/gcode/accel-test-2000-3000.gcode` (print 2000, travel 3000) and `printer-config/E3V2-SpritePro-Wifi/gcode/accel-baseline-500.gcode` (back to 500).

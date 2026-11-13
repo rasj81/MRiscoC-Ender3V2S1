@@ -2,7 +2,7 @@
 ; Paste into: Printer settings > Machine G-code > Machine end G-code.
 ; MERGED 2026-10-28: Orca's original end sequence (lift above the print, present it at the front, raise the
 ; head, heaters/fan off, release X/Y/E) plus a 1.5 mm retract and nozzle-off right after the retract.
-; The original is kept in gcode/original/end.gcode. DRAFT: not yet run on the printer.
+; The original is kept in printer-config/E3V2-SpritePro-Wifi/gcode/original/end.gcode. DRAFT: not yet run on the printer.
 ; Needs Orca "Printable height" = 230 AND firmware Z max = 230 (the Z moves below are capped by printable_height).
 ; Needs "Relative extruder addressing" on in Orca (the start G-code sets M83).
 

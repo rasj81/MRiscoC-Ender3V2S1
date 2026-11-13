@@ -5,7 +5,7 @@ How to get a thumbnail on the printer's screen (Ender 3 V2 with Sprite Pro, SPI 
 ## How it works
 - The firmware has the preview feature compiled in (`HAS_GCODE_PREVIEW 1` in the fork's `Marlin/Configuration.h`, inside the `PROUI_EX` block). The code that reads the thumbnail is closed source: only `gcode_preview.h` is in the repo; the rest ships precompiled in `Marlin/lib/proui/stm32f1/libproui_*.a`. We cannot change it here.
 - The screen shows a **JPEG thumbnail, base64-coded, maximum 20 KB**, embedded in the G-code.
-- Orca writes the tag as `thumbnail_JPG` (capitals). Per mriscoc discussion #1184 and issue #1176 (Orca 1.8.1, 2023), the firmware only recognises lowercase `thumbnail_jpg`. `gcode/orca-marlin-thumb.sh` changes the case after slicing, and only on files sliced for Marlin 2, so Bambu and other profiles are left alone.
+- Orca writes the tag as `thumbnail_JPG` (capitals). Per mriscoc discussion #1184 and issue #1176 (Orca 1.8.1, 2023), the firmware only recognises lowercase `thumbnail_jpg`. `printer-config/tools/orca-marlin-thumb.sh` changes the case after slicing, and only on files sliced for Marlin 2, so Bambu and other profiles are left alone.
 - The official route is mriscoc's Python script (`slicer scripts/prusa-superslicer/professionalfirmware.py` in the upstream repo, wiki page "How to generate a gcode preview"). It also puts print info next to the thumbnail. This shell script gives the picture only.
 
 ## Status: what is and is not verified

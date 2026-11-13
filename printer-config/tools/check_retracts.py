@@ -11,9 +11,9 @@ What it measures
 - Firmware retraction: G10 counts as a retract of the last M207 S length and G11 undoes it. M207 S above the limit fails; G10 with no M207 in the file fails (length unknown) unless --fw-default is given.
 
 Usage
-  python3 tools/check_retracts.py print.gcode            # exit 1 if any retract is deeper than 2 mm
-  python3 tools/check_retracts.py print.gcode --max 1.5
-  python3 tools/check_retracts.py print.gcode --warn-only # always exit 0
+  python3 printer-config/tools/check_retracts.py print.gcode            # exit 1 if any retract is deeper than 2 mm
+  python3 printer-config/tools/check_retracts.py print.gcode --max 1.5
+  python3 printer-config/tools/check_retracts.py print.gcode --warn-only # always exit 0
 
 Orca Slicer: Process settings > Others > Post-processing scripts, one line: python3 /full/path/to/check_retracts.py
 (Orca appends the G-code path). A failing exit makes Orca report an error.
