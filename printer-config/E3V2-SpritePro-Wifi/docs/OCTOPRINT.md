@@ -33,3 +33,17 @@ OctoPrint setup for this build (Ender-3 V2, Sprite Pro, WiFi), running mriscoc M
 - [ ] Exclude Region
 - [ ] PrettyGcode
 - [ ] PSU Control + PSU Control - Shelly (once the plug arrives)
+
+## To-Do: alternative plugins
+
+Candidates to look at instead of, or alongside, the list above.
+
+- [ ] UI Customizer: rearranges and themes the desktop web UI (column layout, hiding panels). It doesn't overlap with TouchUI, which is for phones and small screens.
+- [ ] Dashboard: adds a tab with temperatures, progress, layer and fan info, plus the Pi's CPU load and temperature at a glance.
+- [ ] Slicer Thumbnails: shows the slicer's embedded preview image in the file list and state panel. OrcaSlicer has to embed a thumbnail it can read (PNG is safest) next to the JPG used for the printer screen.
+- [ ] Cancel Objects: cancels a single failed part in a multi-part print, using OrcaSlicer's object labels. It overlaps with Exclude Region, so you probably only need one.
+- [ ] Print Time Genius: more accurate time estimates from analysing the G-code. The analysis is slow on a 3B, and OrcaSlicer's estimate may already be good enough.
+- [ ] File Manager: a fuller file browser (move, copy, rename, folders) than the built-in one.
+- [ ] OctoDash: not a plugin. It's a separate touchscreen app that runs on a display attached to the Pi. It's an alternative to TouchUI, which runs in a browser.
+- [ ] Timelapse Purger: deletes old timelapses after a set number of days so the SD card doesn't fill up. Useful once Octolapse is running.
+- [ ] Firmware Updater: flashes new firmware from OctoPrint. For this STM32 board it needs the Marlin binary file transfer method, so check the firmware supports that before relying on it. Flashing from the SD card still works as the fallback.
