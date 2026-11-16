@@ -7,6 +7,7 @@ This folder holds my own printer material that isn't part of the mriscoc firmwar
 | Path | What's in it |
 |---|---|
 | `orca-profiles/filament/` | OrcaSlicer filament profiles: Inland PLA+, Inland PETG+, DEEPLEE PLA Pro, plus "(Turbo)" versions of each |
+| `docs/HINTS.md` | General printing hints, such as gluing multi-piece prints with 3D Gloop |
 | `docs/GCODE-PREVIEW.md` | How to get G-code thumbnails showing on the mriscoc display |
 | `tools/orca-marlin-thumb.sh` | Orca post-processing script for those thumbnails |
 | `tools/check_retracts.py` | Flags retracts deeper than a limit in a sliced file |
