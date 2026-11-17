@@ -24,3 +24,15 @@ Practical tips that apply to any printer. Add new ones as their own section.
 **Storage.** Opened bottles are best used within 2 to 3 months. Unopened, stored cool (below 15 °C), they keep about a year.
 
 *All figures above come from 3dgloop.com (fusing guide, FAQ and safety page), read 2026-11-16. They have not been tested on this printer yet.*
+
+## Smooth top surfaces: slow the top surface speed
+
+The single biggest lever for a smooth, glossy top skin is the **top surface speed**. A maker of printed patches and badges said in a TikTok video that their top surfaces went from visibly lined to smooth when they dropped the top surface speed from 200 mm/s to 50 mm/s, and left everything else alone. Fine layer lines still show up close, but the top reads as smooth. Source video: <https://www.tiktok.com/@thatmedicandrew/video/7707501628802207006>.
+
+**Why it works.** The top layer bridges over sparse infill and is the one you look at. Printing it slowly gives the extruder time to keep pressure steady and lets each line settle and fuse with its neighbour before the next one arrives, so the lines merge instead of standing as ridges.
+
+**Where to set it in Orca.** Process > Speed > *Top surface*. It only affects the topmost solid layers, so the cost in print time is small even when the rest of the print runs fast.
+
+**Our profiles already follow this.** The "(Sprite Pro, Fast)" processes use 30 mm/s and the "(Sprite Pro, Turbo)" processes use 35 to 60 mm/s (lower on the larger nozzles). If a top still looks rough, check the slice preview first: a top speed that a custom process or an object override has raised is the usual cause. Beyond speed, the next things to try are a **monotonic** top surface pattern and **ironing** (see the ironing calibration to-do).
+
+*From one creator's video (they did not name their printer or slicer), 2026-11-17. The numbers are theirs, not tested on this printer.*
