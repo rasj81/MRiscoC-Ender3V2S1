@@ -36,3 +36,26 @@ The single biggest lever for a smooth, glossy top skin is the **top surface spee
 **Our profiles already follow this.** The "(Sprite Pro, Fast)" processes use 30 mm/s and the "(Sprite Pro, Turbo)" processes use 35 to 60 mm/s (lower on the larger nozzles). If a top still looks rough, check the slice preview first: a top speed that a custom process or an object override has raised is the usual cause. Beyond speed, the next things to try are a **monotonic** top surface pattern and **ironing** (see the ironing calibration to-do).
 
 *From one creator's video (they did not name their printer or slicer), 2026-11-17. The numbers are theirs, not tested on this printer.*
+
+## Sparse infill that doesn't stick: slow it down
+
+Thin, sparse infill lines (low density, crosshatch, gyroid) are the first thing to delaminate or snap loose from the walls when they are printed fast. Each line only touches the layer below at a few points, so it needs time and heat to fuse there, and hard acceleration tugs the fresh line before it has set.
+
+**What our profiles do (2026-11-18).** Sparse infill has its own, lower speed and acceleration:
+
+| Set | Sparse infill speed | Sparse infill accel |
+|---|---|---|
+| (Sprite Pro, Fast) | 40 mm/s (was 50) | 1000 mm/s² (was 2000, the default) |
+| (Sprite Pro, Turbo) | 0.2/0.4: 100, 0.6: 90, 0.8: 70, 1.0: 55 mm/s (was 100 to 200) | 2000 mm/s² (was 4000, the default) |
+
+Solid infill, walls and travel are unchanged, so the cost is small: sparse infill is a minor share of most prints.
+
+**Only below a certain density?** Orca has no setting that ties infill speed to infill density. The speed above applies to sparse infill at any density, which is fine because the problem is worst on sparse lines anyway. For a single part, use a modifier (right-click the object > Add modifier, then set Sparse infill speed on it), or make a copy of the process with a different speed.
+
+**If it still doesn't stick, check these next:**
+- **Temperature.** Go up 5 to 10 °C. Hotter plastic bonds to the layer below better, especially at speed.
+- **Infill line width.** Wider infill (Quality > Line width > Sparse infill, e.g. 0.5 to 0.55 on a 0.4 nozzle) puts more plastic on each contact point.
+- **Infill/wall overlap.** Ours is 23%. Raise it to 25 to 30% if the infill pulls away from the walls rather than from itself.
+- **Combine infill.** Strength > Infill > *Infill combination* prints sparse infill every second layer at double height, which gives thicker, stronger lines (needs the layer height to be at most half the nozzle).
+- **Pattern.** Crosshatch at 15% leaves long unsupported spans. Gyroid or grid at 15 to 20% bond more reliably.
+- **Cooling.** Too much part fan on fast infill chills the line before it fuses; Orca's fan settings are in the filament profile.
