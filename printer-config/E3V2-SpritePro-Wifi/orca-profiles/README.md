@@ -4,7 +4,12 @@ These are standalone OrcaSlicer user presets, tested with Orca 2.4.2. Each one h
 
 - `machine/`: "Creality Ender-3 V2 (Sprite Pro, Fast)" printers for 0.2, 0.4, 0.6, 0.8 and 1.0 mm nozzles.
 - `process/`: Fine, Optimal, Standard and Draft for each nozzle, built from the tuned 0.20mm Standard 0.4 profile. Each process only appears on the printer with its own nozzle size.
-  - Layer heights are 0.3, 0.375, 0.5 and 0.6 times the nozzle size.
+  - Layer heights are "magic numbers": whole multiples of 0.04 mm, one full Z step (400 steps/mm), so every layer lands on the same microstep. Since 2026-11-20 (set by `printer-config/tools/magic.py`):
+    - 0.2: 0.04 / 0.08 / 0.12 / 0.16, first layer 0.16
+    - 0.4: 0.12 / 0.16 / 0.20 / 0.24, first layer 0.20
+    - 0.6: 0.16 / 0.24 / 0.28 / 0.36, first layer 0.28
+    - 0.8: 0.24 / 0.32 / 0.40 / 0.48, first layer 0.40
+    - 1.0: 0.32 / 0.36 / 0.48 / 0.60, first layer 0.48
   - Line widths are scaled by nozzle/0.4.
   - Top and bottom layer counts keep shells about 1.0 mm and 0.8 mm thick.
 - The filament profiles are general, so they live in `printer-config/orca-profiles/filament/`.

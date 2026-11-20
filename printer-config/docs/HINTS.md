@@ -59,3 +59,15 @@ Solid infill, walls and travel are unchanged, so the cost is small: sparse infil
 - **Combine infill.** Strength > Infill > *Infill combination* prints sparse infill every second layer at double height, which gives thicker, stronger lines (needs the layer height to be at most half the nozzle).
 - **Pattern.** Crosshatch at 15% leaves long unsupported spans. Gyroid or grid at 15 to 20% bond more reliably.
 - **Cooling.** Too much part fan on fast infill chills the line before it fuses; Orca's fan settings are in the filament profile.
+
+## Magic number layer heights (multiples of 0.04 mm)
+
+Pick layer heights that are whole multiples of the Z axis's full step. On the Ender-3 V2 (and Ender 3, CR-10, Geeetech A10) the Z motor is 1.8° (200 full steps per turn) on an 8 mm lead screw, so one full step is 8 / 200 = **0.04 mm**. Our firmware confirms it: 400 steps/mm at 16 microsteps. Source video: CHEP, "Better Quality 3D Prints Using MAGIC NUMBERS" <https://youtu.be/WIkT8asT90A>.
+
+**Why it works.** Microsteps between full steps aren't evenly spaced. With a layer height like 0.10 or 0.15 each layer stops at a different microstep, so layers come out slightly thick and thin in turn. A multiple of 0.04 puts every layer on the same microstep, so the layers are even. The difference is small and mostly visible on fine detail under magnification, but it costs nothing, and 0.12 prints faster than 0.10 with the same look.
+
+**Good values:** 0.04, 0.08, 0.12, 0.16, 0.20, 0.24, 0.28, 0.32 and so on. Stay at or below about 80% of the nozzle diameter (0.32 on a 0.4 nozzle). The first layer should be a multiple too.
+
+**Where it's set.** All our Fast and Turbo processes use magic numbers since 2026-11-20 (`printer-config/tools/magic.py`; values in the orca-profiles README). Avoid Orca's variable (adaptive) layer height and *Precise Z height* when you want the benefit, because both produce in-between heights.
+
+**Limits.** Our UBL mesh compensation fades out at 10 mm. Below that the firmware keeps nudging Z to follow the bed, so the benefit shows mainly above 10 mm. To check it on your own printer, print the same model at 0.15 and 0.16 and compare the walls under a magnifier.

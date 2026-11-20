@@ -24,7 +24,7 @@
     "default_nozzle_volume_type": [
         "Standard"
     ],
-    "default_print_profile": "0.50mm Standard @Creality Ender-3 V2 (Sprite Pro, Fast) 1.0 nozzle",
+    "default_print_profile": "0.48mm Standard @Creality Ender-3 V2 (Sprite Pro, Fast) 1.0 nozzle",
     "deretraction_speed": [
         "40"
     ],
@@ -162,7 +162,7 @@
     ],
     "max_resonance_avoidance_speed": "120",
     "min_layer_height": [
-        "0.25"
+        "0.24"
     ],
     "min_resonance_avoidance_speed": "70",
     "name": "Creality Ender-3 V2 (Sprite Pro, Fast) 1.0 nozzle",

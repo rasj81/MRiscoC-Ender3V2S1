@@ -24,7 +24,7 @@
     "default_nozzle_volume_type": [
         "Standard"
     ],
-    "default_print_profile": "0.10mm Standard @Creality Ender-3 V2 (Sprite Pro, Turbo) 0.2 nozzle",
+    "default_print_profile": "0.12mm Standard @Creality Ender-3 V2 (Sprite Pro, Turbo) 0.2 nozzle",
     "deretraction_speed": [
         "40"
     ],
