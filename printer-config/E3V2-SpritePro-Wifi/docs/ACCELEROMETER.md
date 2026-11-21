@@ -1,0 +1,99 @@
+# Accelerometer (Creality ADXL345 sensor on the OctoPi)
+
+Plan for using Creality's "ADXL345 Vibration Compensation Sensor for Ender-3 V3 KE" (store page subtitle "Type C interface") as a removable input-shaping sensor on this Ender-3 V2, read by the Raspberry Pi 3B (OctoPi 64-bit) over SPI. The printer stays on Marlin. Not bought yet: researched 2026-11-21.
+
+Status tags used below: **Verified** means an official Creality page or a photo of the actual board shows it. **Community** means one forum user reported it, not confirmed by Creality. **Inferred** means my reasoning from the ADXL345 datasheet or the Pi pinout, to check when the part arrives.
+
+## What's in the box
+
+- **Verified:** the kit is a small sensor board plus a separate cable. The sensor end of the cable is a **6-pin** connector; the other end is **USB-C**, which plugs into the back of the KE's Nebula screen ([Creality wiki install guide](https://wiki.creality.com/en/ender-series/ender-3-v3-ke/quick-start-guide/g-sensor%EF%BC%88vibration-compensation-sensor%EF%BC%89installation-and-operate-guide), step 4: "install the 6Pin port on the sensor port, and install the Type-C port ... on the back port of the Nebula screen").
+- **Verified:** the replacement cable is Creality part 3103110632 ([Creality troubleshooting page](https://wiki.creality.com/en/3d-printer-accessories/troubleshooting/vibration-sensor-unable-to-recognize-when-it-connects-to-the-machine)).
+- **Community:** the same sensor board was also sold for the Sonic Pad; the two versions "differ only in the cable" ([Creality forum](https://forum.creality.com/t/ender-3v3-ke-connection-g-sensor/4804)).
+- **The USB-C is not USB.** It carries the raw SPI bus. Nothing on the KE shows up as a USB device when the sensor is plugged in (Community: [Creality forum](https://forum.creality.com/t/ender-3-v3-ke-spi-and-gpio-on-nebula-pad-usb-c-connector/36565), [Klipper forum](https://klipper.discourse.group/t/ender-3v3-ke-adxl345-on-type-c/24773)). **Never plug the Creality cable into a real USB port** (the Pi, a Mac, a charger): VBUS is 5 V and the ADXL345 chip is rated 3.6 V max.
+
+## Recommendation: skip the USB-C, cable from the 6-pin connector
+
+The 6-pin end is labeled on a photo of the actual board, so a cable from the sensor's 6-pin socket straight to the Pi header avoids the unknown USB-C wiring entirely. Leave Creality's USB-C cable in the box (or keep it for a KE someday).
+
+### Sensor 6-pin connector
+
+From a photo of the board posted on the [Creality forum](https://forum.creality.com/t/ender-3-v3-ke-spi-and-gpio-on-nebula-pad-usb-c-connector/36565) (chip marked "345B", which is the ADXL345). Orientation: board flat, chip on the left, white connector on the right edge, mounting holes top and bottom. Pins listed top to bottom:
+
+| Position (top to bottom) | Label | ADXL345 function | SPI role |
+|---|---|---|---|
+| 1 | SDO | SDO/ALT ADDRESS | MISO (sensor out) |
+| 2 | SDA | SDA/SDI/SDIO | MOSI (sensor in) |
+| 3 | VCC | supply | |
+| 4 | GND | ground | |
+| 5 | SCLK | SCL/SCLK | clock |
+| 6 | CS | CS | chip select (low = SPI active) |
+
+- **Verified (photo):** the labels and their order.
+- **Inferred:** the connector is a JST-style 6-pin wire-to-board socket, but the pitch isn't stated anywhere. Measure it when it arrives (2.0 mm = JST-PH, 1.5 mm = ZH, 1.25 mm = GH) and buy the matching pre-crimped 6-pin pigtail. Easiest of all: cut Creality's cable in half and keep the 6-pin end, if you don't care about the USB-C end.
+- **Inferred:** VCC should be **3.3 V**. The ADXL345 chip runs at 2.0 to 3.6 V, and the KE board is believed to be 3.3 V logic (Community, "I think" from the forum poster). I can't see a regulator on the photographed side, so do not feed 5 V. 3.3 V is safe whether or not there is a regulator.
+- **Community:** the KE talks to it in **SPI mode 3** (`SPI_MODE3 // KE is mode 3` in the forum poster's working Arduino test). That matches the ADXL345 datasheet and Klipper's driver.
+- **Not usable:** I2C. The pin labels are I2C-style (SDA/SCL), but the chip is wired for SPI here, CS is broken out, and Klipper's docs say I2C is too slow for resonance measurement anyway.
+
+### Pi 3B header mapping (SPI0, CE0)
+
+| Sensor pin | Pi physical pin | Pi signal |
+|---|---|---|
+| VCC | 1 | 3V3 |
+| GND | 6 (or 9, 14, 20, 25) | GND |
+| SDA (MOSI) | 19 | GPIO10 / SPI0 MOSI |
+| SDO (MISO) | 21 | GPIO9 / SPI0 MISO |
+| SCLK | 23 | GPIO11 / SPI0 SCLK |
+| CS | 24 | GPIO8 / SPI0 CE0 |
+
+- **Verified:** this is the standard Pi SPI0 mapping, the same table Klipper's resonance docs use ([Creality's copy of the Klipper doc](https://github.com/CrealityOfficial/Ender-3_V3_KE_Klipper/blob/main/docs/Measuring_Resonances.md)).
+- Pi end: a 6-way (or 2x3) female Dupont housing so the cable unplugs at the Pi too. Pins 19, 21, 23 and 24 are not adjacent to 1 and 6, so use single Dupont housings or a 2x13 IDC with only these wires populated.
+- Cable: the sensor moves with the hotend (X) and the bed (Y), so use flexible stranded wire about 1 m long. Klipper recommends twisting pairs GND+MISO, 3.3V+MOSI, SCLK+CS (or a shielded Cat5e cable) to keep the SPI clean.
+- The Pi is powered separately from the printer (see [OCTOPRINT.md](OCTOPRINT.md)), so the sensor's ground comes only from the Pi. That's fine: the sensor has no electrical connection to the printer, only the bracket.
+
+## Fallback: building a USB-C breakout cable
+
+Only if you want to keep the Creality cable whole and plug a USB-C breakout board into it. **Community, unverified:** a Printables mount page ([WMVos, model 713280](https://www.printables.com/model/713280-adxl345-alternate-y-axis-pcb-mount-ender-3-v3-seke); Printables blocked my fetch, this is from the search summary) gives:
+
+| USB-C pin | ADXL345 signal |
+|---|---|
+| VBUS | VCC |
+| GND | GND |
+| D- | SDA (MOSI) |
+| D+ | SDO (MISO) |
+| CC | SCLK |
+| SBU | CS |
+
+The same page says the port is symmetrical, so either plug orientation works. Before trusting it, check with a multimeter in continuity mode from each pin of a USB-C breakout plugged into the cable to the 6-pin end. Use a breakout that exposes CC and SBU (most cheap "USB-C 2.0" breakouts only have VBUS, GND, D+ and D-), and don't add a USB-C extension cable in between: ordinary cables don't carry SBU straight through.
+
+## Testing the wiring (before any measuring)
+
+1. Enable SPI on the Pi: add `dtparam=spi=on` to `config.txt` on the boot partition (`/boot/firmware/config.txt` on newer OctoPi images, `/boot/config.txt` on older ones), then reboot. `ls /dev/spidev0.*` should list `spidev0.0`.
+2. Read the device ID. The ADXL345 always answers `0xE5` to a read of register 0x00:
+
+   ```bash
+   sudo apt install -y python3-spidev
+   python3 -c "import spidev; s=spidev.SpiDev(); s.open(0,0); s.mode=3; s.max_speed_hz=1000000; print(hex(s.xfer2([0x80,0])[1]))"
+   ```
+
+   `0xe5` means the wiring is right. `0x0` or `0xff` usually means SDA/SDO are swapped, CS isn't connected, or VCC is missing. At 3.3 V a swap won't damage anything; fix and retry.
+
+## Using it with Marlin (no Klipper)
+
+Marlin has no accelerometer support, so the sensor is only a measuring tool: the Pi records vibration while OctoPrint moves the axis, a script on the Pi or the Mac finds the resonance peak, and the result goes into Marlin's input shaper (`INPUT_SHAPING_X` and `_Y` are enabled in this firmware) as `M593 X F<Hz> D<damping>`, `M593 Y F<Hz> D<damping>`, `M500`. Marlin only has the ZV shaper, so use the peak frequency rather than Klipper's MZV/EI recommendation.
+
+Candidate tools, to check when the part arrives (Inferred, not tested here):
+- [`adxl345spi`](https://github.com/nagimov/adxl345spi): a small Pi program that samples an ADXL345 over SPI at up to 3200 Hz and writes CSV.
+- Klipper's `scripts/calibrate_shaper.py` (from a Klipper checkout, no Klipper install needed) to turn the CSV into a frequency plot. It expects Klipper's CSV column format, so the recorder's output may need a header rewrite.
+- A G-code sweep: short, fast back-and-forth moves on one axis at rising frequency, sent from OctoPrint while the recorder runs. This replaces Klipper's `TEST_RESONANCES`.
+
+Until that's set up, the ringing tower in [PRINTER-SETTINGS.md](PRINTER-SETTINGS.md) remains the way to tune input shaping.
+
+## Mounting
+
+Creality's official X and Y brackets are on Creality Cloud (`vip.creality.com/en/goods-detail/2098`, sign-in required) and fit the KE's hotend and bed, not the V2 with a Sprite Pro. The sensor board mounts with two M3 screws (Creality uses M3x8 flat heads), so a clip-on bracket only needs two M3 holes at the board's hole spacing (measure it). Mount rigidly: a loose clip adds its own resonance and spoils the reading.
+
+## Open questions (check when it arrives)
+
+- 6-pin connector pitch and board hole spacing.
+- Whether there's a regulator on the back of the board (doesn't change the plan: feed 3.3 V either way).
+- Confirm the 6-pin label order against the photo, and the `0xE5` device ID read.
