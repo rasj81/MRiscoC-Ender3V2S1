@@ -71,3 +71,13 @@ Pick layer heights that are whole multiples of the Z axis's full step. On the En
 **Where it's set.** All our Fast and Turbo processes use magic numbers since 2026-11-20 (`printer-config/tools/magic.py`; values in the orca-profiles README). Avoid Orca's variable (adaptive) layer height and *Precise Z height* when you want the benefit, because both produce in-between heights.
 
 **Limits.** Our UBL mesh compensation fades out at 10 mm. Below that the firmware keeps nudging Z to follow the bed, so the benefit shows mainly above 10 mm. To check it on your own printer, print the same model at 0.15 and 0.16 and compare the walls under a magnifier.
+
+## Ideas to test from CHEP's Filament Friday videos
+
+Settings he recommends that our profiles don't use yet. Each needs a test print before it goes into the profiles. Sources: "Smooth Top Surface and No Elephants Foot" <https://youtu.be/FH1wUWy7Hjw>, "Making 3D Prints Fit Perfectly with One Simple Setting" <https://youtu.be/t76ScnXf3Tg>, "Don't Make This Mistake With Your 3D Prints" <https://youtu.be/JJpS6_dm99s>.
+
+- [ ] **Elephant's foot compensation** (Quality > Elephant foot compensation; ours is 0). Print a 20 mm cube, measure the top and the very bottom with calipers, and set half the difference. His bottom was 0.3 mm wider, so he used 0.15. Expect 0.1 to 0.15 on ours.
+- [ ] **XY hole compensation** (Quality > X-Y hole compensation; ours is 0). If holes come out tight, a positive value makes them larger and a negative one smaller. Print a hole test (e.g. 5, 10 and 20 mm holes), measure, and set the shortfall. Use it per object (modifier or object settings) when only some parts need a fit.
+- [ ] **Narrower top surface line width** (Quality > Line width > Top surface; ours is 0.40 on a 0.4 nozzle). He went to 0.26 to 0.28 for the walls and top/bottom and got a smoother top and slightly smoother sides. Try 0.30 to 0.35 for the top surface (and optionally the outer wall) and compare against 0.40 on the same model.
+
+**Orientation beats layer height for long curved parts.** He printed door trim flat at 0.1 mm layers and the curved face came out stepped and rough, with a flat island on top. Printed standing on its flat back edge, the curve is traced by each layer's outline instead of by layer steps, so even 0.2 or 0.28 mm layers were smoother, and the print took about half the time. For moldings, trim, and other long profile shapes, stand them up on the flat edge.
