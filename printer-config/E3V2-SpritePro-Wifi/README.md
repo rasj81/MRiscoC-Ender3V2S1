@@ -7,6 +7,8 @@ These are the settings for this build: an Ender-3 V2 with a Sprite Pro direct dr
 | `docs/PRINTER-SETTINGS.md` | Main notes: hardware, tuned settings, filament table and the tuning log |
 | `docs/profiles/` | Planned variants, e.g. Project Ferrari |
 | `docs/m503/` | Raw `M503` settings dumps |
+| `docs/FIRMWARE-STANDARD-SDIO.md` | How to go back from the SPI firmware to the standard (SDIO) build, with the saved binary |
+| `firmware/` | Saved firmware binaries and the config each was built from |
 | `docs/OCTOPRINT.md` | OctoPrint setup (Pi, camera, baud, G-code scripts, Shelly power) and the plugin to-do list |
 | `gcode/` | Start, end, pause and layer-change G-code, settings-restore files and acceleration tests. The original stock versions are in `gcode/original/` |
 | `orca-profiles/` | OrcaSlicer printer and process profiles for this build |

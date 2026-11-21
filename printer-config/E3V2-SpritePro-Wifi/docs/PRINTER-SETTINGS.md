@@ -11,6 +11,9 @@ Provenance tags: **[config]** read from the generated firmware config; **[ref]**
 |---|---|---|
 | `ender3v2-sprite` | Ender3V2, 422, DWIN, BLT, UBL, T13, IS, LA, MPC | T13 (`TEMP_SENSOR_0 13`) [config]. T13 for the Sprite Pro is unconfirmed: compare the reading with a thermometer before heating. |
 | `ender3v2-bowden` | same, no T13 | stock type 1 (`TEMP_SENSOR_0 1`) [config] |
+| `ender3v2-sprite-spi` | `ender3v2-sprite` + SPI (SD-WIFI board; power-loss recovery off) | T13 |
+
+Standard (SDIO) vs SPI, and how to go back to SDIO with the saved 2026-10-28 binary: `docs/FIRMWARE-STANDARD-SDIO.md`.
 
 File name: `<Configurator name>-<firmware branch>-<YYYYMMDD>.bin` (e.g. `Ender3V2-422-BLTUBL-T13-IS-LA-MPC-Bugfix-20261026.bin`). Machine name shown on the printer is shortened to 32 characters or less (`E3V2-422-BLTUBL-T13-IS-LA-MPC`). Branches: blank = latest bugfix, `stable` = newest New-Year-#### (regression testing).
 Flash: copy only the `.bin` to the SD root (FAT32), use a new file name each time. Display assets are in the artifact's `display/` folder; a DWIN screen does not need an update with the stock icon set.
