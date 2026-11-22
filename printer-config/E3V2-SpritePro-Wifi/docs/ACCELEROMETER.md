@@ -8,7 +8,7 @@ Status tags used below: **Verified** means an official Creality page or a photo 
 
 - **Verified:** the kit is a small sensor board plus a separate cable. The sensor end of the cable is a **6-pin** connector; the other end is **USB-C**, which plugs into the back of the KE's Nebula screen ([Creality wiki install guide](https://wiki.creality.com/en/ender-series/ender-3-v3-ke/quick-start-guide/g-sensor%EF%BC%88vibration-compensation-sensor%EF%BC%89installation-and-operate-guide), step 4: "install the 6Pin port on the sensor port, and install the Type-C port ... on the back port of the Nebula screen").
 - **Verified:** the replacement cable is Creality part 3103110632 ([Creality troubleshooting page](https://wiki.creality.com/en/3d-printer-accessories/troubleshooting/vibration-sensor-unable-to-recognize-when-it-connects-to-the-machine)).
-- **Community:** the same sensor board was also sold for the Sonic Pad; the two versions "differ only in the cable" ([Creality forum](https://forum.creality.com/t/ender-3v3-ke-connection-g-sensor/4804)).
+- **Community (two sources):** the same sensor board was also sold for the Sonic Pad; the two versions "differ only in the cable" ([Creality forum](https://forum.creality.com/t/ender-3v3-ke-connection-g-sensor/4804)). The [Reddit guide](https://www.reddit.com/r/klippers/comments/1e5ocz5/guide_hooking_up_your_creality_adxl345gsensor_to/) agrees: the Sonic Pad cable ends in a **PS/2 plug (mini-DIN 6)**, the Nebula Pad (KE) cable in USB-C, and the two cables use different wire colors (see [Cable wire colors](#cable-wire-colors)).
 - **The USB-C is not USB.** It carries the raw SPI bus. Nothing on the KE shows up as a USB device when the sensor is plugged in (Community: [Creality forum](https://forum.creality.com/t/ender-3-v3-ke-spi-and-gpio-on-nebula-pad-usb-c-connector/36565), [Klipper forum](https://klipper.discourse.group/t/ender-3v3-ke-adxl345-on-type-c/24773)). **Never plug the Creality cable into a real USB port** (the Pi, a Mac, a charger): VBUS is 5 V and the ADXL345 chip is rated 3.6 V max.
 
 ## Recommendation: skip the USB-C, cable from the 6-pin connector
@@ -29,8 +29,10 @@ From a photo of the board posted on the [Creality forum](https://forum.creality.
 | 6 | CS | CS | chip select (low = SPI active) |
 
 - **Verified (photo):** the labels and their order.
+- **Community, confirms the photo:** the [Reddit guide](https://www.reddit.com/r/klippers/comments/1e5ocz5/guide_hooking_up_your_creality_adxl345gsensor_to/) lists the USB-C cable's wires in the same order, SDO, SDA, VCC, GND, SCL, CS (red to blue), so red is position 1 at the sensor end.
 - **Inferred:** the connector is a JST-style 6-pin wire-to-board socket, but the pitch isn't stated anywhere. Measure it when it arrives (2.0 mm = JST-PH, 1.5 mm = ZH, 1.25 mm = GH) and buy the matching pre-crimped 6-pin pigtail. Easiest of all: cut Creality's cable in half and keep the 6-pin end, if you don't care about the USB-C end.
 - **Verified (Klipper docs):** connect the ADXL345 to **3.3 V only**. Klipper warns that some boards have a level shifter, which makes 5 V dangerous for the Pi.
+- **Community:** the [Reddit guide](https://www.reddit.com/r/klippers/comments/1e5ocz5/guide_hooking_up_your_creality_adxl345gsensor_to/) labels VCC as 3.3 V on both cable versions, and the author ran it from a Pi 4B's 3.3 V pin.
 - **Inferred:** VCC should be **3.3 V**. The ADXL345 chip runs at 2.0 to 3.6 V, and the KE board is believed to be 3.3 V logic (Community, "I think" from the forum poster). I can't see a regulator on the photographed side, so do not feed 5 V. 3.3 V is safe whether or not there is a regulator.
 - **Community:** the KE talks to it in **SPI mode 3** (`SPI_MODE3 // KE is mode 3` in the forum poster's working Arduino test). That matches the ADXL345 datasheet and Klipper's driver.
 - **Not usable:** I2C. The pin labels are I2C-style (SDA/SCL), but the chip is wired for SPI here, CS is broken out, and Klipper's docs say I2C is too slow for resonance measurement anyway.
@@ -51,6 +53,23 @@ From a photo of the board posted on the [Creality forum](https://forum.creality.
 - Cable: the sensor moves with the hotend (X) and the bed (Y), so use flexible stranded wire about 1 m long. Klipper recommends twisting pairs GND+MISO, 3.3V+MOSI, SCLK+CS (or a shielded Cat5e cable) to keep the SPI clean.
 - **Ground loop warning (Klipper docs):** the Pi's ground is tied to the printer's mainboard through the OctoPrint USB cable, so the sensor's GND is effectively printer ground. Klipper says the sensor and the screws holding it must not touch any metal part of the printer, or a ground loop can damage the electronics. Use a printed bracket, and nylon screws or washers wherever a screw would reach the metal frame, hotend or bed.
 - If a shielded Cat5e cable is used, connect the shield to the Pi's ground only, but connect the GND wire at both ends.
+
+### Cable wire colors
+
+From the [Reddit guide](https://www.reddit.com/r/klippers/comments/1e5ocz5/guide_hooking_up_your_creality_adxl345gsensor_to/) (2026-11-22, Community: one user's cables; the guide's photos couldn't be opened here, so this is from its text). The author cut the USB-C end off and fitted a quick disconnect, then Dupont pins to a Pi 4B, using the standard Klipper Pi wiring above.
+
+| Signal | Pi pin | USB-C cable (Nebula/KE) | PS/2 cable (Sonic Pad) |
+|---|---|---|---|
+| VCC 3.3 V | 1 | purple | red |
+| GND | 6 | yellow | black |
+| SDA (MOSI) | 19 | black | orange |
+| SDO (MISO) | 21 | red | purple |
+| SCL (SCLK) | 23 | orange | blue |
+| CS | 24 | blue | yellow |
+
+- **Watch the colors:** red is VCC on the PS/2 cable but SDO on the USB-C cable, and black is GND on one and SDA on the other. Wire by this table (or by the board labels with a continuity check), never by "red = power".
+- **Mini-DIN 6 pigtail plan:** the Sonic Pad version shows Creality itself uses a mini-DIN 6 (PS/2) plug on this sensor. If you buy the Sonic Pad cable, its PS/2 end can mate with a mini-DIN 6 socket pigtail on the Pi side. The guide gives wire colors only, not mini-DIN pin numbers, so map pins with a meter before wiring the Pi end. A generic PS/2 extension or keyboard pigtail has its own colors: go by mini-DIN pin numbers and continuity, not by colors.
+- Still unknown from the guide: the 6-pin connector's pitch, and which USB-C contacts carry which wire (it gives colors only, so the Printables mapping below stays unverified).
 
 ## Fallback: building a USB-C breakout cable
 
@@ -105,10 +124,12 @@ Creality's official X and Y brackets are on Creality Cloud (`vip.creality.com/en
 
 ## Sources checked
 
-- 2026-11-22: two Reddit posts (r/klippers "Guide: hooking up your Creality ADXL345/G-sensor", and an r/ender3v2 Klipper high-speed config post) could not be read: Reddit is blocked for every fetch route available to Claude. The connector pitch, pin order and regulator questions stay open until someone pastes the guide text or the part arrives.
+- 2026-11-22: the [Reddit guide](https://www.reddit.com/r/klippers/comments/1e5ocz5/guide_hooking_up_your_creality_adxl345gsensor_to/) (text pasted by Richard; Reddit itself is blocked for Claude, and its photos couldn't be opened). It confirms the 6-pin order and 3.3 V, and gives wire colors for both cables (table above). It doesn't settle the connector pitch or the USB-C contact mapping.
+- 2026-11-22: an r/ender3v2 post (text pasted by Richard) that only announces the davebl160389-ux high-speed repo (Sprite Pro, ADXL345, dual 5015 fans) and says to calibrate before copying its values. Nothing new on wiring. The repo uses a BTT ADXL345 over USB, not the Creality sensor.
 
 ## Open questions (check when it arrives)
 
 - 6-pin connector pitch and board hole spacing.
+- Check the wire colors on whichever cable arrives against the [Cable wire colors](#cable-wire-colors) table.
 - Whether there's a regulator on the back of the board (doesn't change the plan: feed 3.3 V either way).
 - Confirm the 6-pin label order against the photo, and the `0xE5` device ID read.
