@@ -30,6 +30,7 @@ From a photo of the board posted on the [Creality forum](https://forum.creality.
 
 - **Verified (photo):** the labels and their order.
 - **Inferred:** the connector is a JST-style 6-pin wire-to-board socket, but the pitch isn't stated anywhere. Measure it when it arrives (2.0 mm = JST-PH, 1.5 mm = ZH, 1.25 mm = GH) and buy the matching pre-crimped 6-pin pigtail. Easiest of all: cut Creality's cable in half and keep the 6-pin end, if you don't care about the USB-C end.
+- **Verified (Klipper docs):** connect the ADXL345 to **3.3 V only**. Klipper warns that some boards have a level shifter, which makes 5 V dangerous for the Pi.
 - **Inferred:** VCC should be **3.3 V**. The ADXL345 chip runs at 2.0 to 3.6 V, and the KE board is believed to be 3.3 V logic (Community, "I think" from the forum poster). I can't see a regulator on the photographed side, so do not feed 5 V. 3.3 V is safe whether or not there is a regulator.
 - **Community:** the KE talks to it in **SPI mode 3** (`SPI_MODE3 // KE is mode 3` in the forum poster's working Arduino test). That matches the ADXL345 datasheet and Klipper's driver.
 - **Not usable:** I2C. The pin labels are I2C-style (SDA/SCL), but the chip is wired for SPI here, CS is broken out, and Klipper's docs say I2C is too slow for resonance measurement anyway.
@@ -45,10 +46,11 @@ From a photo of the board posted on the [Creality forum](https://forum.creality.
 | SCLK | 23 | GPIO11 / SPI0 SCLK |
 | CS | 24 | GPIO8 / SPI0 CE0 |
 
-- **Verified:** this is the standard Pi SPI0 mapping, the same table Klipper's resonance docs use ([Creality's copy of the Klipper doc](https://github.com/CrealityOfficial/Ender-3_V3_KE_Klipper/blob/main/docs/Measuring_Resonances.md)).
+- **Verified:** this is the standard Pi SPI0 mapping. It matches the table in the current [Klipper resonance doc](https://www.klipper3d.org/Measuring_Resonances.html) pin for pin (checked 2026-11-22) and [Creality's copy of it](https://github.com/CrealityOfficial/Ender-3_V3_KE_Klipper/blob/main/docs/Measuring_Resonances.md).
 - Pi end: a 6-way (or 2x3) female Dupont housing so the cable unplugs at the Pi too. Pins 19, 21, 23 and 24 are not adjacent to 1 and 6, so use single Dupont housings or a 2x13 IDC with only these wires populated.
 - Cable: the sensor moves with the hotend (X) and the bed (Y), so use flexible stranded wire about 1 m long. Klipper recommends twisting pairs GND+MISO, 3.3V+MOSI, SCLK+CS (or a shielded Cat5e cable) to keep the SPI clean.
-- The Pi is powered separately from the printer (see [OCTOPRINT.md](OCTOPRINT.md)), so the sensor's ground comes only from the Pi. That's fine: the sensor has no electrical connection to the printer, only the bracket.
+- **Ground loop warning (Klipper docs):** the Pi's ground is tied to the printer's mainboard through the OctoPrint USB cable, so the sensor's GND is effectively printer ground. Klipper says the sensor and the screws holding it must not touch any metal part of the printer, or a ground loop can damage the electronics. Use a printed bracket, and nylon screws or washers wherever a screw would reach the metal frame, hotend or bed.
+- If a shielded Cat5e cable is used, connect the shield to the Pi's ground only, but connect the GND wire at both ends.
 
 ## Fallback: building a USB-C breakout cable
 
@@ -86,11 +88,24 @@ Candidate tools, to check when the part arrives (Inferred, not tested here):
 - Klipper's `scripts/calibrate_shaper.py` (from a Klipper checkout, no Klipper install needed) to turn the CSV into a frequency plot. It expects Klipper's CSV column format, so the recorder's output may need a header rewrite.
 - A G-code sweep: short, fast back-and-forth moves on one axis at rising frequency, sent from OctoPrint while the recorder runs. This replaces Klipper's `TEST_RESONANCES`.
 
+Klipper's own procedure, adapted (from the [Klipper resonance doc](https://www.klipper3d.org/Measuring_Resonances.html)):
+- Turn all fans off during a measurement; noisy fans spoil the reading.
+- This is a bed slinger, so it needs two mounts: measure X with the sensor on the extruder itself (not the carriage plate), then Y with it on the bed.
+- Klipper's offline scripts work without a Klipper install. `scripts/graph_accelerometer.py` takes raw accelerometer CSVs (columns `#time,accel_x,accel_y,accel_z`), and `scripts/calibrate_shaper.py raw.csv -o x.png` prints a fitted ZV frequency and a suggested max accel for it. If the printer's corner speed differs from Klipper's default 5 mm/s, pass `--square_corner_velocity=`.
+- The suggested max accel is a theoretical ceiling, not a target. Pick something below it and confirm with a test print.
+- Don't measure often. The sweep shakes the printer hard near its resonances, so check that screws are still tight afterwards.
+
+Ballpark for this build: a Klipper config for an Ender-3 V2 with a Sprite Pro ([davebl160389-ux on GitHub](https://github.com/davebl160389-ux/Ender-3-V2-Klipper-HIGHT-SPEED-Performance)) has MZV X 65.6 Hz and Y 47.5 Hz (commented out, from that person's printer, so only a sanity check for ours).
+
 Until that's set up, the ringing tower in [PRINTER-SETTINGS.md](PRINTER-SETTINGS.md) remains the way to tune input shaping.
 
 ## Mounting
 
 Creality's official X and Y brackets are on Creality Cloud (`vip.creality.com/en/goods-detail/2098`, sign-in required) and fit the KE's hotend and bed, not the V2 with a Sprite Pro. The sensor board mounts with two M3 screws (Creality uses M3x8 flat heads), so a clip-on bracket only needs two M3 holes at the board's hole spacing (measure it). Mount rigidly: a loose clip adds its own resonance and spoils the reading.
+
+## Sources checked
+
+- 2026-11-22: two Reddit posts (r/klippers "Guide: hooking up your Creality ADXL345/G-sensor", and an r/ender3v2 Klipper high-speed config post) could not be read: Reddit is blocked for every fetch route available to Claude. The connector pitch, pin order and regulator questions stay open until someone pastes the guide text or the part arrives.
 
 ## Open questions (check when it arrives)
 
