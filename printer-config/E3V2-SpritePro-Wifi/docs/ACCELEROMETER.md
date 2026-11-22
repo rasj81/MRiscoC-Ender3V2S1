@@ -86,6 +86,27 @@ From the [Reddit guide](https://www.reddit.com/r/klippers/comments/1e5ocz5/guide
 - Still unknown: which USB-C contacts carry which wire (the guide gives colors only, so the Printables mapping below stays unverified).
 - **From the guide's comments:** two people got `Invalid adxl345 id (got ff vs e5)`; the author's answer was wiring or wire order, checked with a meter from the sensor contacts to the Pi header. Another asked about a Pi Pico; the author says it runs on 3.3 V, so a Pico works too.
 
+### Richard's plan: mini-DIN socket built into the Pi case (2026-11-22)
+
+Keep the sensor's PS/2 (mini-DIN 6) cable whole, and build a short pigtail inside the Pi case: a panel-mount **mini-DIN 6 female socket** on the case wall, wired to a **2x4 female Dupont housing** that plugs onto Pi pins 17 to 24 (the compact block above). The sensor then plugs straight into the case and unplugs without touching the Pi header.
+
+| Signal | PS/2 cable color (Sonic Pad version) | Mini-DIN socket pin | Pi pin |
+|---|---|---|---|
+| VCC 3.3 V | red | measure | 17 |
+| SDA (MOSI) | orange | measure | 19 |
+| GND | black | measure | 20 |
+| SDO (MISO) | purple | measure | 21 |
+| SCLK | blue | measure | 23 |
+| CS | yellow | measure | 24 |
+
+Pins 18 and 22 in the 2x4 housing stay empty.
+
+- **Map the mini-DIN pins with a meter first.** The guide gives the cable's wire colors, not mini-DIN pin numbers, and those colors are for the one user's cable. Plug the sensor cable in, unplug the board end, and beep each wire from the 6-pin end (labels SDO, SDA, VCC, GND, SCLK, CS on the board) to each socket pin. Fill in the "Mini-DIN socket pin" column from that, then wire the pigtail by the socket's pin numbers, not by its wire colors (a pigtail's own colors won't match Creality's).
+- Socket pin numbers are mirrored between the front of the socket and its solder side. Label the pins from the side you solder on, and check again after the socket is mounted.
+- Test before the first measurement: with the pigtail on the Pi and the sensor plugged in, run the `0xE5` device ID read in [Testing the wiring](#testing-the-wiring-before-any-measuring).
+- **Never plug this into a real PS/2 port** (an old PC or a KVM): PS/2 supplies 5 V on its power pin. Likewise never plug a keyboard or mouse into the case socket.
+- The socket's metal shell is a path to ground. On a printed case it stays isolated, which is what the ground-loop warning above wants. Don't screw it to a metal panel that touches the printer frame.
+
 ## Fallback: building a USB-C breakout cable
 
 Only if you want to keep the Creality cable whole and plug a USB-C breakout board into it. **Community, unverified:** a Printables mount page ([WMVos, model 713280](https://www.printables.com/model/713280-adxl345-alternate-y-axis-pcb-mount-ender-3-v3-seke); Printables blocked my fetch, this is from the search summary) gives:
