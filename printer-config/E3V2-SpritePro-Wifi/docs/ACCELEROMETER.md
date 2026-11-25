@@ -138,6 +138,8 @@ The same page says the port is symmetrical, so either plug orientation works. Be
 
 Marlin has no accelerometer support, so the sensor is only a measuring tool: the Pi records vibration while OctoPrint moves the axis, a script on the Pi or the Mac finds the resonance peak, and the result goes into Marlin's input shaper (`INPUT_SHAPING_X` and `_Y` are enabled in this firmware) as `M593 X F<Hz> D<damping>`, `M593 Y F<Hz> D<damping>`, `M500`. Marlin only has the ZV shaper, so use the peak frequency rather than Klipper's MZV/EI recommendation.
 
+**What was actually used (2026-11-25):** the [Pinput Shaping](https://github.com/navaismo/Octoprint-Pinput_Shaping) OctoPrint plugin, with its `adxl345spi` recorder patched so captures pass the plugin's timing check. The sensor clock runs 2.7% slow, so multiply the plugin's frequencies by 0.973 and set them with `M593` plus `M500` rather than the plugin's Apply button. The patch, how to rebuild or revert it, and the results (X ZV 54 Hz, Y ZV 35 Hz, damping 0.05) are in [adxl345spi-patch/README.md](adxl345spi-patch/README.md).
+
 Candidate tools, to check when the part arrives (Inferred, not tested here):
 - [`adxl345spi`](https://github.com/nagimov/adxl345spi): a small Pi program that samples an ADXL345 over SPI at up to 3200 Hz and writes CSV.
 - Klipper's `scripts/calibrate_shaper.py` (from a Klipper checkout, no Klipper install needed) to turn the CSV into a frequency plot. It expects Klipper's CSV column format, so the recorder's output may need a header rewrite.

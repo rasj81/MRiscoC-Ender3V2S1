@@ -1,0 +1,11 @@
+--- a/adxl345spi.c
++++ b/adxl345spi.c
+@@ -235,7 +235,7 @@
+         }
+         fprintf(f, "time,x,y,z\n");
+ 
+-        const int flushEvery = 1000;
++        const int flushEvery = 16;
+         int bufferIndex = 0;
+         int totalSamples = 0;
+ 
