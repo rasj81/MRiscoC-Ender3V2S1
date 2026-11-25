@@ -33,7 +33,7 @@ Result: six 25 s captures passed the plugin's check at 800, 1600 and 3200 Hz.
 
 ## Rebuild and install (on the Pi)
 
-The plugin's installer had already put the build tools and `pigpio` on the Pi, and set `dtparam=spi=on` in `/boot/firmware/config.txt` (reboot after that the first time). Running the plugin's installer on OctoPi also needed a workaround for OctoPi's git root guard; that detail is from the install session and was not rechecked when writing this note.
+The plugin's installer had already put the build tools and `pigpio` on the Pi, and set `dtparam=spi=on` in `/boot/firmware/config.txt` (reboot after that the first time). OctoPi blocks `git` as root with a guard script at `/root/bin/git`, and the plugin's installer clones as root, so it was run with a clean PATH that skips `/root/bin` rather than removing the guard: `sudo env PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin bash <installer>`.
 
 ```bash
 mkdir -p ~/adxl345spi-fix2 && cd ~/adxl345spi-fix2
